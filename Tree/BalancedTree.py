@@ -78,6 +78,7 @@ class BalancedTree:
             #    If "key_to_search" is 9 for example, this would indicate,
             #    that the key is in R5 since 9 is greater than 8.
             #         node.keys:      [1,   3,   7,   8]
+            # correspondences:        /    /    /    /
             #         node.sons:   [R1,  R2,  R3,  R4,  R5]
             # 2) The reference to the last son is "None", which means that "key_to_search" is not in the tree
 
