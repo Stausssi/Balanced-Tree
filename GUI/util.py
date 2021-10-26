@@ -1,12 +1,12 @@
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLayout
 
 
-def createVerticalLayout(widgets) -> QVBoxLayout:
+def createVerticalLayout(items) -> QVBoxLayout:
     """
-    This method creates a vertical layout by appending each widget of the given widgets.
+    This method creates a vertical layout by appending each widget of the given items.
 
     Args:
-        widgets (list[QWidget]): A list of PyQt widgets
+        items (list[QWidget] or list[QLayout]): A list of PyQt widgets or layouts
 
     Returns:
         QVBoxLayout: The created layout
@@ -14,18 +14,21 @@ def createVerticalLayout(widgets) -> QVBoxLayout:
 
     layout = QVBoxLayout()
 
-    for widget in widgets:
-        layout.addWidget(widget)
+    for item in items:
+        if isinstance(item, QWidget):
+            layout.addWidget(item)
+        else:
+            layout.addLayout(item)
 
     return layout
 
 
-def createHorizontalLayout(widgets) -> QHBoxLayout:
+def createHorizontalLayout(items) -> QHBoxLayout:
     """
-    This method creates a horizontal layout by appending each widget of the given widgets.
+    This method creates a horizontal layout by appending each widget of the given items.
 
     Args:
-        widgets (list[QWidget]): A list of PyQt widgets
+        items (list[QWidget] or list[QLayout]): A list of PyQt widgets or layouts
 
     Returns:
         QHBoxLayout: The created layout
@@ -33,7 +36,10 @@ def createHorizontalLayout(widgets) -> QHBoxLayout:
 
     layout = QHBoxLayout()
 
-    for widget in widgets:
-        layout.addWidget(widget)
+    for item in items:
+        if isinstance(item, QWidget):
+            layout.addWidget(item)
+        else:
+            layout.addLayout(item)
 
     return layout
