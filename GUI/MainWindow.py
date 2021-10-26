@@ -1,5 +1,5 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QPushButton, QLabel, QVBoxLayout, QSizePolicy, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QPushButton, QLabel, QWidget
 
 from GUI import createHorizontalLayout, createVerticalLayout
 

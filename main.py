@@ -9,7 +9,7 @@ def main():
     application = QApplication(sys.argv)
 
     # Create the MainWindow instance
-    mainWindow = MainWindow()
+    _ = MainWindow()
 
     # Execute the Application
     application.exec()
