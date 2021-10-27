@@ -17,21 +17,20 @@ class MainWindow(QWidget):
         self.setWindowTitle("Balancierter Baum")
         self.setGeometry(0, 0, 1280, 720)
 
-        # Create the main layout
+        # Create the window layout
         self.setLayout(createVerticalLayout([self.__createTreeLayout(), self.__createFooter()]))
-
         self.__createOrderLayout()
 
         # Show this window
         self.show()
 
     @staticmethod
-    def __createTreeLayout():
+    def __createTreeLayout() -> QVBoxLayout:
         """
         This method creates the tree layout of the application.
 
         Returns:
-            Any: The layout of the tree.
+            QVBoxLayout: The layout of the tree.
         """
 
         temp = QLabel("Temporary main label")
@@ -40,7 +39,7 @@ class MainWindow(QWidget):
         return createVerticalLayout([temp])
 
     @staticmethod
-    def __createFooter():
+    def __createFooter() -> QVBoxLayout:
         """
         This method creates the footer layout containing buttons for each operation.
 
@@ -98,11 +97,12 @@ class MainWindow(QWidget):
 
         return createVerticalLayout([hLine, layout])
 
-    def __createOrderLayout(self):
+    def __createOrderLayout(self) -> None:
         """
+        This method creates the layout in the upper left corner containing the order input.
 
         Returns:
-
+            None: Nothing
         """
 
         label = QLabel("Order")
