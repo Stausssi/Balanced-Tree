@@ -3,7 +3,7 @@ class BalancedTree:
     This class represents a balanced tree and handles operations (such as inserting or deleting) on it
 
     Args:
-        k (int): Order of the balanced tree, minimal number of keys in one node
+        k (int): Order of the balanced tree, minimal number of keys in one node, max is 2*k
     """
 
     def __init__(self, k):
@@ -11,7 +11,7 @@ class BalancedTree:
 
     def insert(self, key):
         """
-        insert a new
+        insert a new key into the binary tree
 
         Args:
             key:
@@ -19,7 +19,21 @@ class BalancedTree:
         Returns:
 
         """
-        pass
+        target_node, key = self.search(key)
+        if key is not None:
+            # key was found in tree
+            raise ValueError(f"{key} is already in the tree.")
+        else:
+            # insert key into tree in "node"
+            try:
+                target_node.addKey(key)
+            except ValueError:
+                # node is full, create new node
+
+
+
+
+
 
     def search(self, key):
         """
@@ -29,7 +43,7 @@ class BalancedTree:
             key(int): Key that is searched for in the balanced tree
 
         Returns:
-            int: An Integer if the key was found, else None
+            Tuple(Node,int): An Integer if the key was found, else None
 
         """
         # recursively search the tree for "key"
@@ -44,18 +58,20 @@ class BalancedTree:
             key_to_search(int): Key
 
         Returns:
-            Tuple(Node,int): An Integer if the key was found, else None
+            Tuple(Node,int): Either (Node, int): key was found and the node it was found in
+                            or (Node, None): key was not found, should be inserted in node
 
         """
 
         if node.hasKey(key_to_search):
             # the key is returned, data could also be returned
-            return self, key_to_search
+            return node, key_to_search
         else:
             # determine child node to search recursively
             child_node = node.getSubtree(key_to_search)
             if child_node is None:
-                return None, None
+                # key could not be found, should be inserted at node
+                return node, None
             else:
                 return self.__recursive_search(child_node, key_to_search)
 
@@ -74,6 +90,8 @@ class Node:
         self.isRoot = isRoot
         self.keys = [None] * (2 * k)  # min k max 2k entries
         self.sons = [None] * (2 * k + 1)  # max 2k + 1 sons, references child nodes
+        self.parent = None
+        self.overflow = None
 
     def hasKey(self, key):
         """
@@ -88,6 +106,26 @@ class Node:
         """
 
         return key in self.keys
+
+    def addKey(self,key):
+        """
+        Adds a key to a node
+
+        Args:
+            key:
+
+        Returns:
+
+        """
+        if len(self.keys) < (2*self.k):
+            # get index of first None value
+            first_none_index = next(self.keys.index(key) for key in self.keys if key is None)
+            self.keys[first_none_index] = key
+        else:
+            self.overflow = key
+            raise ValueError("Node is full")
+
+    def fixOverflowAndSplit(self):
 
     def getSubtree(self, key_to_search):
         """
