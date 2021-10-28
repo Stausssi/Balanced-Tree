@@ -82,12 +82,14 @@ class ConfirmationDialog(QDialog):
 
         match dialogType:
             case DialogType.INSERT | DialogType.FIND | DialogType.DELETE:
+                # Create a layout containing a singular number input
                 numInput = QLineEdit()
                 numInput.setValidator(QIntValidator())
                 numInput.textChanged.connect(self.__updateButtonEnabled)
 
                 return createVerticalLayout([numInput])
             case DialogType.CSV:
+                # Create a layout containing a text box and a button to open a file picker
                 pathInput = QLineEdit()
                 pathInput.setEnabled(False)
                 pathInput.textChanged.connect(self.__updateButtonEnabled)
@@ -102,6 +104,7 @@ class ConfirmationDialog(QDialog):
 
                 return createHorizontalLayout([pathInput, pathButton])
             case DialogType.CSV_OVERVIEW:
+                # Create a layout containing a scroll view, which will be filled with the contents of the CSV file
                 from GUI import MainWindow
                 if isinstance(self.parent(), MainWindow):
                     text = QLabel(self.parent().getCSVContent())
@@ -111,6 +114,7 @@ class ConfirmationDialog(QDialog):
                     scrollView.setWidget(text)
                     return createVerticalLayout([scrollView])
             case DialogType.FILL:
+                # Create a layout with three number inputs for the lower border, upper border and count of random items
                 layout = QFormLayout()
 
                 lowerBorder = QLineEdit()
@@ -131,6 +135,7 @@ class ConfirmationDialog(QDialog):
 
                 return layout
             case DialogType.RESET | DialogType.NONE:
+                # Create an empty layout
                 return QVBoxLayout()
 
     def __updateButtonEnabled(self, *_) -> None:

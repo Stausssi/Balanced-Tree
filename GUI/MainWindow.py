@@ -185,7 +185,7 @@ class MainWindow(QWidget):
 
     def __insert(self, value) -> None:
         """
-        This method is used to insert a value into the tree.
+        This method is used to insert a value into the tree. It is used as a dialog-callback.
 
         Args:
             value (int): The new value
@@ -200,7 +200,7 @@ class MainWindow(QWidget):
 
     def __search(self, value) -> None:
         """
-        This method is used to search for a value in the tree.
+        This method is used to search for a value in the tree. It is used as a dialog-callback.
 
         Args:
             value (int): The value to search for
@@ -215,7 +215,7 @@ class MainWindow(QWidget):
 
     def __delete(self, value) -> None:
         """
-        This method is used to remove a value from the tree.
+        This method is used to remove a value from the tree. It is used as a dialog-callback.
 
         Args:
             value (int): The value which will be deleted.
@@ -230,7 +230,7 @@ class MainWindow(QWidget):
 
     def __showCSVContents(self, path) -> None:
         """
-        This method displays the contents of a given CSV-file.
+        This method displays the contents of a given CSV-file. It is used as a dialog-callback.
 
         Args:
             path (str): The path to the CSV-file
@@ -276,7 +276,7 @@ class MainWindow(QWidget):
 
     def __importCSVContents(self) -> None:
         """
-        This method imports the data from a previously read CSV-file.
+        This method imports the data from a previously read CSV-file. It is used as a dialog-callback.
         NOTE: This method also resets the string containing the CSV contents. Therefore, calling getCSVContents()
         after this method will return an empty string.
 
@@ -290,7 +290,7 @@ class MainWindow(QWidget):
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """
-        This method randomly fills the tree with n entries between the given bounds.
+        This method randomly fills the tree with n entries between the given bounds. It is used as a dialog-callback.
 
         Args:
             lowerBorder (int): The lower border of the RNG.
@@ -307,7 +307,7 @@ class MainWindow(QWidget):
 
     def __reset(self) -> None:
         """
-        This method resets the tree.
+        This method resets the tree. It is used as a dialog-callback.
 
         Returns:
             None: Nothing
