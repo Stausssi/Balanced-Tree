@@ -1,10 +1,15 @@
 from functools import partial
+from typing import Callable
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame
 
-from GUI import createHorizontalLayout, createVerticalLayout, DialogType, ConfirmationDialog
+from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage
+from .Dialogs import DialogType, ConfirmationDialog
+
+from util import readCSV
+from config import DEFAULT_ORDER, QIntValidator_MAX
 
 
 class MainWindow(QWidget):
@@ -23,7 +28,8 @@ class MainWindow(QWidget):
         self.setLayout(createVerticalLayout([self.__createTreeLayout(), self.__createFooter()]))
 
         # Other variables
-        self.__csvContent = ""
+        self.__scrollContent = ""
+        self.__order = DEFAULT_ORDER
 
         # Show this window
         self.show()
@@ -67,8 +73,23 @@ class MainWindow(QWidget):
         orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         orderInput = QLineEdit()
-        orderInput.setValidator(QIntValidator())
-        orderInput.editingFinished.connect(lambda: print("Order of the tree updated"))
+        orderInput.setText(str(DEFAULT_ORDER))
+        orderInput.setValidator(QIntValidator(1, QIntValidator_MAX))
+        orderInput.returnPressed.connect(
+            lambda: self.__showDialog(
+                "Willst du die Ordnung wirklich verändern? Dadurch wird der komplette Baum zurückgesetzt.",
+                partial(
+                    self.__updateOrder,
+                    int(orderInput.text())
+                ),
+                hasCancel=True,
+                onFail=partial(
+                    orderInput.setText,
+                    str(self.__order)
+                )
+            ) if int(orderInput.text()) != self.__order else None
+        )
+
         orderLayout = createVerticalLayout([orderLabel, orderInput])
 
         # Create the buttons
@@ -160,15 +181,16 @@ class MainWindow(QWidget):
 
         return createVerticalLayout([hLine, layout])
 
-    def __showDialog(self, text, callback, dialogType=DialogType.NONE, hasCancel=False) -> None:
+    def __showDialog(self, text, callback, dialogType=DialogType.NONE, hasCancel=False, onFail=None) -> None:
         """
         This method creates and shows a dialog. On success, callback will be called.
 
         Args:
             text (str): The text the dialog should display.
-            callback (def): A callback, which will be called if the user confirms the dialog.
-            dialogType (DialogType): The type of dialog. This will determine the layout of the dialog.
+            callback (Callable): A callback, which will be called if the user confirms the dialog.
+            dialogType (DialogType): The messageType of dialog. This will determine the layout of the dialog.
             hasCancel (bool): Whether the dialog should have a cancel button
+            onFail (Callable or None): The callback to execute on cancellation of the dialog.
 
         Returns:
             None: Nothing
@@ -178,10 +200,24 @@ class MainWindow(QWidget):
 
         if dialog.exec():
             callback(*dialog.getReturnValues())
-        else:
-            print("Dialog was cancelled")
+        elif onFail is not None:
+            onFail()
 
     # ---------- [Callback functions] ---------- #
+
+    def __updateOrder(self, value) -> None:
+        """
+        This method is called after the user updates the order of the tree.
+
+        Args:
+            value (int): The new order of the tree
+
+        Returns:
+            None: Nothing
+        """
+
+        self.__order = int(value)
+        self.__reset()
 
     def __insert(self, value) -> None:
         """
@@ -239,54 +275,80 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        # TODO: Implementieren
-        print("CSV:", path)
-        self.__csvContent = "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "text"
+        try:
+            self.__scrollContent = readCSV(path)
 
-        self.__showDialog(
-            "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.CSV_OVERVIEW, True
-        )
+            self.__showDialog(
+                "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.SCROLL_CONTENT,
+                True
+            )
+        except FileNotFoundError as e:
+            displayUserMessage("reading CSV file", e)
 
     def __importCSVContents(self) -> None:
         """
         This method imports the data from a previously read CSV-file. It is used as a dialog-callback.
-        NOTE: This method also resets the string containing the CSV contents. Therefore, calling getCSVContents()
+        NOTE: This method also resets the string containing the scroll contents. Therefore, calling getScrollContents()
         after this method will return an empty string.
 
         Returns:
             None: Nothing
         """
 
-        # TODO: Implementieren
-        self.__csvContent = ""
-        pass
+        invalidLines: dict[int, str] = {}
+        lineCount = 1
+
+        # Create a list of lists containing the operation as the first element and the value as the second
+        for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
+            # Check whether the value is singular
+            if len(value) == 1:
+                value = value[0]
+
+                # Match the operation
+                match operation.lower():
+                    case "i":
+                        try:
+                            # Insert the value
+                            print(operation, "Insert value", value)
+                        except ValueError as e:
+                            # Add line to invalid lines
+                            invalidLines.update({
+                                lineCount: str(e)
+                            })
+                    case "d":
+                        try:
+                            # Delete the value
+                            print(operation, "delete value", value)
+                        except ValueError as e:
+                            # Add line to invalid lines
+                            invalidLines.update({
+                                lineCount: str(e)
+                            })
+                    case _:
+                        # Add line to invalid lines
+                        invalidLines.update({
+                            lineCount: f"Invalid operation '{operation}'!"
+                        })
+            else:
+                # Add line to invalid lines
+                invalidLines.update({
+                    lineCount: f"Invalid number of entries ({len(value)})!"
+                })
+
+            lineCount += 1
+
+        if len(invalidLines) > 0:
+            self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
+
+            self.__showDialog(
+                "The following lines contain mistakes and couldn't be added",
+                print,
+                DialogType.SCROLL_CONTENT,
+                False
+            )
+
+        # Reset scroll content
+        self.__scrollContent = ""
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """
@@ -301,9 +363,27 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        print("Random fill:", lowerBorder, upperBorder, count)
-        # TODO: Implementieren
-        pass
+        try:
+            lowerBorder = int(lowerBorder)
+            upperBorder = int(upperBorder)
+            count = int(count)
+        except ValueError as e:
+            displayUserMessage("parsing user input", e)
+            return
+
+        # Check whether given params are actually possible
+        if any([lowerBorder < 0, upperBorder < 0, count <= 0]):
+            displayUserMessage("parsing user input", ValueError("Negative values are not allowed!"))
+        elif lowerBorder > upperBorder:
+            displayUserMessage("parsing user input", ValueError("Lower border is bigger than upper border"))
+        elif count > upperBorder - lowerBorder + 1:
+            displayUserMessage(
+                "parsing user input",
+                ValueError(f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}]")
+            )
+        else:
+            # TODO: Implementieren
+            print("Random fill:", lowerBorder, upperBorder, count)
 
     def __reset(self) -> None:
         """
@@ -319,12 +399,12 @@ class MainWindow(QWidget):
 
     # ---------- [Public methods] ---------- #
 
-    def getCSVContent(self) -> str:
+    def getScrollContent(self) -> str:
         """
-        This method returns a string containing the content of a previously given CSV file.
+        This method returns a string representing the contents of the scroll view of the dialog.
 
         Returns:
-            str: The contents of the file
+            str: The contents of the scroll area
         """
 
-        return self.__csvContent
+        return self.__scrollContent

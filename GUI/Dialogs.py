@@ -6,7 +6,8 @@ from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QDialogButtonBox, QWidget, QLayout, QLineEdit, QPushButton, \
     QFormLayout, QFileDialog, QScrollArea
 
-from GUI import createHorizontalLayout, createVerticalLayout
+from .util import createHorizontalLayout, createVerticalLayout
+from config import QIntValidator_MAX
 
 
 class DialogType(Enum):
@@ -15,7 +16,7 @@ class DialogType(Enum):
     DELETE = auto()
 
     CSV = auto()
-    CSV_OVERVIEW = auto()
+    SCROLL_CONTENT = auto()
     FILL = auto()
 
     RESET = auto()
@@ -29,7 +30,7 @@ class ConfirmationDialog(QDialog):
     Args:
         text (str): The main text of the dialog.
         parent (QWidget): The parent of the widget. Usually the MainWindow.
-        dialogType (DialogType): The type of the dialog. This will determine the inner layout of the dialog.
+        dialogType (DialogType): The messageType of the dialog. This will determine the inner layout of the dialog.
         hasCancel (bool): Whether the dialog should have an additional "Cancel" button
     """
 
@@ -46,26 +47,26 @@ class ConfirmationDialog(QDialog):
 
         # Create the buttons
         buttons = QDialogButtonBox.StandardButton.Ok
-        self.buttonBox = QDialogButtonBox()
+        self.__buttonBox = QDialogButtonBox()
         if hasCancel:
             buttons |= QDialogButtonBox.StandardButton.Cancel
-            self.buttonBox.rejected.connect(self.reject)
+            self.__buttonBox.rejected.connect(self.reject)
 
-        self.buttonBox.setStandardButtons(buttons)
-        self.buttonBox.accepted.connect(self.accept)
+        self.__buttonBox.setStandardButtons(buttons)
+        self.__buttonBox.accepted.connect(self.accept)
 
         # Disable the OK button by default
-        self.okButton = self.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
+        self.__okButton = self.__buttonBox.button(QDialogButtonBox.StandardButton.Ok)
 
-        if dialogType != DialogType.NONE and dialogType != DialogType.RESET and dialogType != DialogType.CSV_OVERVIEW:
-            self.okButton.setEnabled(False)
+        if dialogType != DialogType.NONE and dialogType != DialogType.RESET and dialogType != DialogType.SCROLL_CONTENT:
+            self.__okButton.setEnabled(False)
 
         # Combine text, layout and buttons
-        self.innerLayout = self.__getInnerLayout(dialogType)
+        self.__innerLayout = self.__getInnerLayout(dialogType)
 
         layout.addWidget(textLabel)
-        layout.addLayout(self.innerLayout)
-        layout.addWidget(self.buttonBox)
+        layout.addLayout(self.__innerLayout)
+        layout.addWidget(self.__buttonBox)
 
         self.setLayout(layout)
 
@@ -74,7 +75,7 @@ class ConfirmationDialog(QDialog):
         This method returns the layout of the given DialogType.
 
         Args:
-            dialogType (DialogType): The type of the dialog
+            dialogType (DialogType): The messageType of the dialog
 
         Returns:
             QLayout or None: The inner layout of the dialog.
@@ -84,7 +85,7 @@ class ConfirmationDialog(QDialog):
             case DialogType.INSERT | DialogType.FIND | DialogType.DELETE:
                 # Create a layout containing a singular number input
                 numInput = QLineEdit()
-                numInput.setValidator(QIntValidator())
+                numInput.setValidator(QIntValidator(0, QIntValidator_MAX))
                 numInput.textChanged.connect(self.__updateButtonEnabled)
 
                 return createVerticalLayout([numInput])
@@ -103,12 +104,16 @@ class ConfirmationDialog(QDialog):
                 )
 
                 return createHorizontalLayout([pathInput, pathButton])
-            case DialogType.CSV_OVERVIEW:
-                # Create a layout containing a scroll view, which will be filled with the contents of the CSV file
+            case DialogType.SCROLL_CONTENT:
+                # Create a layout containing a scroll view filled with contents given by the main window
                 from GUI import MainWindow
                 if isinstance(self.parent(), MainWindow):
-                    text = QLabel(self.parent().getCSVContent())
+                    text = QLabel()
                     text.setWordWrap(True)
+
+                    parent = self.parent()
+                    assert isinstance(parent, MainWindow)
+                    text.setText(parent.getScrollContent())
 
                     scrollView = QScrollArea()
                     scrollView.setWidget(text)
@@ -118,15 +123,15 @@ class ConfirmationDialog(QDialog):
                 layout = QFormLayout()
 
                 lowerBorder = QLineEdit()
-                lowerBorder.setValidator(QIntValidator())
+                lowerBorder.setValidator(QIntValidator(0, QIntValidator_MAX))
                 lowerBorder.textChanged.connect(self.__updateButtonEnabled)
 
                 upperBorder = QLineEdit()
-                upperBorder.setValidator(QIntValidator())
+                upperBorder.setValidator(QIntValidator(0, QIntValidator_MAX))
                 upperBorder.textChanged.connect(self.__updateButtonEnabled)
 
                 count = QLineEdit()
-                count.setValidator(QIntValidator())
+                count.setValidator(QIntValidator(0, QIntValidator_MAX))
                 count.textChanged.connect(self.__updateButtonEnabled)
 
                 layout.addRow("Untergrenze", lowerBorder)
@@ -147,7 +152,7 @@ class ConfirmationDialog(QDialog):
             None: Nothing
         """
 
-        self.okButton.setEnabled(all([
+        self.__okButton.setEnabled(all([
             widget.hasAcceptableInput() for widget in self.__getInputWidgets() if isinstance(widget, QLineEdit)
         ]))
 
@@ -159,7 +164,7 @@ class ConfirmationDialog(QDialog):
             list[QWidget]: A list of widgets.
         """
 
-        return [self.innerLayout.itemAt(i).widget() for i in range(self.innerLayout.count())]
+        return [self.__innerLayout.itemAt(i).widget() for i in range(self.__innerLayout.count())]
 
     def getReturnValues(self) -> list[str]:
         """
