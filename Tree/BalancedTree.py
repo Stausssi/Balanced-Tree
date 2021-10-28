@@ -126,6 +126,19 @@ class Node:
             raise ValueError("Node is full")
 
     def fixOverflowAndSplit(self):
+        """
+        orders entries, split node correctly and returns a new node
+        use for leaf and tree overflows, also change links in non leaf nodes
+
+        Returns:
+
+        """
+        if self.overflow is not None:
+            keys = self.keys
+            # find index after which the new key has to be inserted
+            insert_index = next([self.keys.index(key) for key in self.keys if self.overflow < key])
+
+
 
     def getSubtree(self, key_to_search):
         """
@@ -173,3 +186,12 @@ class Node:
         """
 
         return self.sons == [None] * (2 * self.k + 1)
+
+    # getters and setters
+
+    def getOverflow(self):
+        return self.overflow
+
+    def setOverflow(self, overflow):
+        self.overflow = overflow
+
