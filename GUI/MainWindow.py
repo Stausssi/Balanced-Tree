@@ -4,8 +4,11 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame
 
-from GUI import createHorizontalLayout, createVerticalLayout, DialogType, ConfirmationDialog, displayUserMessage
+from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage
+from .Dialogs import DialogType, ConfirmationDialog
+
 from util import readCSV
+from config import DEFAULT_ORDER, QIntValidator_MAX
 
 
 class MainWindow(QWidget):
@@ -25,6 +28,7 @@ class MainWindow(QWidget):
 
         # Other variables
         self.__scrollContent = ""
+        self.__order = DEFAULT_ORDER
 
         # Show this window
         self.show()
@@ -68,8 +72,23 @@ class MainWindow(QWidget):
         orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         orderInput = QLineEdit()
-        orderInput.setValidator(QIntValidator())
-        orderInput.editingFinished.connect(lambda: print("Order of the tree updated"))
+        orderInput.setText(str(DEFAULT_ORDER))
+        orderInput.setValidator(QIntValidator(1, QIntValidator_MAX))
+        orderInput.returnPressed.connect(
+            lambda: self.__showDialog(
+                "Willst du die Ordnung wirklich verändern? Dadurch wird der komplette Baum zurückgesetzt.",
+                partial(
+                    self.__updateOrder,
+                    int(orderInput.text())
+                ),
+                hasCancel=True,
+                onFail=partial(
+                    orderInput.setText,
+                    str(self.__order)
+                )
+            ) if int(orderInput.text()) != self.__order else None
+        )
+
         orderLayout = createVerticalLayout([orderLabel, orderInput])
 
         # Create the buttons
@@ -161,7 +180,7 @@ class MainWindow(QWidget):
 
         return createVerticalLayout([hLine, layout])
 
-    def __showDialog(self, text, callback, dialogType=DialogType.NONE, hasCancel=False) -> None:
+    def __showDialog(self, text, callback, dialogType=DialogType.NONE, hasCancel=False, onFail=None) -> None:
         """
         This method creates and shows a dialog. On success, callback will be called.
 
@@ -170,6 +189,7 @@ class MainWindow(QWidget):
             callback (def): A callback, which will be called if the user confirms the dialog.
             dialogType (DialogType): The messageType of dialog. This will determine the layout of the dialog.
             hasCancel (bool): Whether the dialog should have a cancel button
+            onFail (def): The callback to execute on cancellation of the dialog.
 
         Returns:
             None: Nothing
@@ -179,10 +199,23 @@ class MainWindow(QWidget):
 
         if dialog.exec():
             callback(*dialog.getReturnValues())
-        else:
-            print("Dialog was cancelled")
+        elif onFail is not None:
+            onFail()
 
     # ---------- [Callback functions] ---------- #
+
+    def __updateOrder(self, value) -> None:
+        """
+        This method is called after the user updates the order of the tree.
+
+        Args:
+            value (int): The new order of the tree
+
+        Returns:
+            None: Nothing
+        """
+
+        self.__order = int(value)
 
     def __insert(self, value) -> None:
         """
@@ -328,9 +361,27 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        print("Random fill:", lowerBorder, upperBorder, count)
-        # TODO: Implementieren
-        pass
+        try:
+            lowerBorder = int(lowerBorder)
+            upperBorder = int(upperBorder)
+            count = int(count)
+        except ValueError as e:
+            displayUserMessage("parsing user input", e)
+            return
+
+        # Check whether given params are actually possible
+        if any([lowerBorder < 0, upperBorder < 0, count <= 0]):
+            displayUserMessage("parsing user input", ValueError("Negative values are not allowed!"))
+        elif lowerBorder > upperBorder:
+            displayUserMessage("parsing user input", ValueError("Lower border is bigger than upper border"))
+        elif count > upperBorder - lowerBorder + 1:
+            displayUserMessage(
+                "parsing user input",
+                ValueError(f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}]")
+            )
+        else:
+            # TODO: Implementieren
+            print("Random fill:", lowerBorder, upperBorder, count)
 
     def __reset(self) -> None:
         """

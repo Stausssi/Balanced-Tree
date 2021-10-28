@@ -6,7 +6,8 @@ from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QDialogButtonBox, QWidget, QLayout, QLineEdit, QPushButton, \
     QFormLayout, QFileDialog, QScrollArea
 
-from GUI import createHorizontalLayout, createVerticalLayout
+from .util import createHorizontalLayout, createVerticalLayout
+from config import QIntValidator_MAX
 
 
 class DialogType(Enum):
@@ -84,7 +85,7 @@ class ConfirmationDialog(QDialog):
             case DialogType.INSERT | DialogType.FIND | DialogType.DELETE:
                 # Create a layout containing a singular number input
                 numInput = QLineEdit()
-                numInput.setValidator(QIntValidator())
+                numInput.setValidator(QIntValidator(0, QIntValidator_MAX))
                 numInput.textChanged.connect(self.__updateButtonEnabled)
 
                 return createVerticalLayout([numInput])
@@ -122,15 +123,15 @@ class ConfirmationDialog(QDialog):
                 layout = QFormLayout()
 
                 lowerBorder = QLineEdit()
-                lowerBorder.setValidator(QIntValidator())
+                lowerBorder.setValidator(QIntValidator(0, QIntValidator_MAX))
                 lowerBorder.textChanged.connect(self.__updateButtonEnabled)
 
                 upperBorder = QLineEdit()
-                upperBorder.setValidator(QIntValidator())
+                upperBorder.setValidator(QIntValidator(0, QIntValidator_MAX))
                 upperBorder.textChanged.connect(self.__updateButtonEnabled)
 
                 count = QLineEdit()
-                count.setValidator(QIntValidator())
+                count.setValidator(QIntValidator(0, QIntValidator_MAX))
                 count.textChanged.connect(self.__updateButtonEnabled)
 
                 layout.addRow("Untergrenze", lowerBorder)
