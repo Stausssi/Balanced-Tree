@@ -216,6 +216,7 @@ class MainWindow(QWidget):
         """
 
         self.__order = int(value)
+        self.__reset()
 
     def __insert(self, value) -> None:
         """
