@@ -15,7 +15,7 @@ class DialogType(Enum):
     DELETE = auto()
 
     CSV = auto()
-    CSV_OVERVIEW = auto()
+    SCROLL_CONTENT = auto()
     FILL = auto()
 
     RESET = auto()
@@ -57,7 +57,7 @@ class ConfirmationDialog(QDialog):
         # Disable the OK button by default
         self.__okButton = self.__buttonBox.button(QDialogButtonBox.StandardButton.Ok)
 
-        if dialogType != DialogType.NONE and dialogType != DialogType.RESET and dialogType != DialogType.CSV_OVERVIEW:
+        if dialogType != DialogType.NONE and dialogType != DialogType.RESET and dialogType != DialogType.SCROLL_CONTENT:
             self.__okButton.setEnabled(False)
 
         # Combine text, layout and buttons
@@ -103,8 +103,8 @@ class ConfirmationDialog(QDialog):
                 )
 
                 return createHorizontalLayout([pathInput, pathButton])
-            case DialogType.CSV_OVERVIEW:
-                # Create a layout containing a scroll view, which will be filled with the contents of the CSV file
+            case DialogType.SCROLL_CONTENT:
+                # Create a layout containing a scroll view filled with contents given by the main window
                 from GUI import MainWindow
                 if isinstance(self.parent(), MainWindow):
                     text = QLabel()
@@ -112,7 +112,7 @@ class ConfirmationDialog(QDialog):
 
                     parent = self.parent()
                     assert isinstance(parent, MainWindow)
-                    text.setText(parent.getCSVContent())
+                    text.setText(parent.getScrollContent())
 
                     scrollView = QScrollArea()
                     scrollView.setWidget(text)

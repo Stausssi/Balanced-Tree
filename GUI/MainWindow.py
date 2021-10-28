@@ -24,7 +24,7 @@ class MainWindow(QWidget):
         self.setLayout(createVerticalLayout([self.__createTreeLayout(), self.__createFooter()]))
 
         # Other variables
-        self.__csvContent = ""
+        self.__scrollContent = ""
 
         # Show this window
         self.show()
@@ -241,10 +241,11 @@ class MainWindow(QWidget):
         """
 
         try:
-            self.__csvContent = readCSV(path)
+            self.__scrollContent = readCSV(path)
 
             self.__showDialog(
-                "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.CSV_OVERVIEW, True
+                "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.SCROLL_CONTENT,
+                True
             )
         except FileNotFoundError as e:
             displayUserMessage("reading CSV file", e)
@@ -252,18 +253,67 @@ class MainWindow(QWidget):
     def __importCSVContents(self) -> None:
         """
         This method imports the data from a previously read CSV-file. It is used as a dialog-callback.
-        NOTE: This method also resets the string containing the CSV contents. Therefore, calling getCSVContents()
+        NOTE: This method also resets the string containing the scroll contents. Therefore, calling getScrollContents()
         after this method will return an empty string.
 
         Returns:
             None: Nothing
         """
 
-        # Create a list of lists containing the operation as the first element and the value as the second
-        entries = [line.split(",") for line in self.__csvContent.split("\n")]
-        print(entries)
+        invalidLines: dict[int, str] = {}
+        lineCount = 1
 
-        self.__csvContent = ""
+        # Create a list of lists containing the operation as the first element and the value as the second
+        for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
+            # Check whether the value is singular
+            if len(value) == 1:
+                value = value[0]
+
+                # Match the operation
+                match operation.lower():
+                    case "i":
+                        try:
+                            # Insert the value
+                            print(operation, "Insert value", value)
+                        except ValueError as e:
+                            # Add line to invalid lines
+                            invalidLines.update({
+                                lineCount: str(e)
+                            })
+                    case "d":
+                        try:
+                            # Delete the value
+                            print(operation, "delete value", value)
+                        except ValueError as e:
+                            # Add line to invalid lines
+                            invalidLines.update({
+                                lineCount: str(e)
+                            })
+                    case _:
+                        # Add line to invalid lines
+                        invalidLines.update({
+                            lineCount: f"Invalid operation '{operation}'!"
+                        })
+            else:
+                # Add line to invalid lines
+                invalidLines.update({
+                    lineCount: f"Invalid number of entries ({len(value)})!"
+                })
+
+            lineCount += 1
+
+        if len(invalidLines) > 0:
+            self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
+
+            self.__showDialog(
+                "The following lines contain mistakes and couldn't be added",
+                print,
+                DialogType.SCROLL_CONTENT,
+                False
+            )
+
+        # Reset scroll content
+        self.__scrollContent = ""
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """
@@ -296,12 +346,12 @@ class MainWindow(QWidget):
 
     # ---------- [Public methods] ---------- #
 
-    def getCSVContent(self) -> str:
+    def getScrollContent(self) -> str:
         """
-        This method returns a string containing the content of a previously given CSV file.
+        This method returns a string representing the contents of the scroll view of the dialog.
 
         Returns:
-            str: The contents of the file
+            str: The contents of the scroll area
         """
 
-        return self.__csvContent
+        return self.__scrollContent
