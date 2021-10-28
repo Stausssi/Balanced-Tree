@@ -4,23 +4,29 @@ class Node:
 
     Args:
         k(int): Order of the balanced tree, minimal number of keys in one node
-        isRoot(bool): Determines if Node is the leaf
+        keys(list[int]): Keys of the node
+        children(list[Node]): Children of the node, for n keys are n+1 children
+        parent(Node or None): Parent of the node, if Parent is None, the node is the root
     """
 
-    def __init__(self, k, isRoot=False, keys=None, children=None):
+    def __init__(self, k, keys=None, children=None, parent=None):
         self.k = k
-        self.isRoot = isRoot
-        self.keys = [None] * (2 * k)  # min k max 2k entries
-        if keys is not None:
-            for key in keys:
-                self.addKeyAndChild(key, None)
-        self.sons = [None] * (2 * k + 1)  # max 2k + 1 sons, references child nodes
-        self.parent = None
-        self.overflow = []
+        if keys is None:
+            self.keys = []  # min k max 2k entries
+        else:
+            self.keys = keys
+        if children is None:
+            self.children = []  # max 2k + 1 children, references child nodes
+        else:
+            self.children = children
+        if parent is None:
+            self.parent = None
+        else:
+            self.parent = parent
 
     def hasKey(self, key):
         """
-        Checks if a node contains a key
+        Checks if the node contains a key.
 
         Args:
             key(int): The key that should be checked
@@ -32,96 +38,80 @@ class Node:
 
         return key in self.keys
 
-    def addKeyAndChild(self, key, child):
+    def addKeyAndChild(self, insert_key, child=None):
         """
-        Adds a key to a node
+        Inserts a key sorted into a leaf node (child=None)
+        or insert a key and a corresponding child in a non leaf node (child=Node).
 
         Args:
-            key:
-            child:
+            insert_key(int): Inserted key
+            child(Node or None): Child, that should be inserted logically after insert_key
 
         Returns:
 
         """
-        if len(self.keys) < (2 * self.k):
-            # get index of first None value
-            first_none_index = next(self.keys.index(key) for key in self.keys if key is None)
-            # insert new key into keys array
-            self.keys[first_none_index] = key
-            # insert new child into sons array
-            self.sons[first_none_index + 1] = child
-        else:
-            self.overflow = [key, child]
-            raise ValueError("Node is full")
+        # insert new key into keys array so that it stays sorted
+        key_insert_index = self.insert_key_sorted(insert_key)
+        # insert new child into children array
+        if child is not None:
+            self.children.insert(key_insert_index + 1, child)
 
-    def fixOverflowAndSplit(self):
+    def split(self):
         """
-        orders entries, split node correctly and returns a new node
-        use for leaf and tree overflows, also change links in non leaf nodes
+        Splits a node, where an overflow occurred into three parts:
+            1) The middle key
+            2) The right_node, which contains keys+children on the right side of the middle key
+            3) The left_node, which contains keys+children on the left side of the middle key
 
-        # Todo: Does not split the references to child objects
+        The left node is the original node, but modified and the right node is a new node. And example is seen below:
+
+            No overflow for k = 2
+
+            keys:       [    1,   3,   6,   ,7    ]
+            children:   [ R1   R2   R3   R4    R5 ]
+
+            insert key 5 with child OR4 --> overflow (max keys are 2*K = 4)
+
+            keys:       [    1,   3,     5,    6,   ,7     ]
+            children:   [ R1   R2   R3     0R4    R5    R6 ]
+
+            split into the following parts:
+
+            keys:       [  1,   3,   ]      |5|     [     6,    ,7   ]
+            children:   [R1   R2   R3]              [ 0R4    R5    R6]
+            parts:        left_node    middle_index      right_node
 
         Returns:
-            Tuple(int,Node): Returns the middle element of the overfilled node and an new node with the successors of
-                            of the middle node
+            Tuple(Node,int,Node): Returns the middle element of the overfilled node, the right and left nodes:
+                                 (left_node, middle_key, right_node)
 
         """
-        if self.overflow:
+        if self.isOverflow():
             keys = self.keys
-            # find index after which the new key has to be inserted
-            key_insert_index = next([self.keys.index(key) for key in self.keys if self.overflow < key])
-            keys.insert(key_insert_index, self.getOverflow()[0])
-
             # split list in two nodes, node one should contain the elements smaller than the middle elements,
             # node two should contain the elements bigger than the middle element.
-            # It should be accounted for k, the minimal number of nodes.
-            # Since keys have at least k and at most 2k entries, if an overflow occurs, keys will always have 2k+1
-            # entries, which is always odd. The list is split like so:
-            # k=3 + Overflow: [1,3,5 |7| 9,10,11] --> split list at |
-            # k=2 + Overflow: [1,3 |5| 6,7] --> split list at |
-            # [    1,   3,   |5|,    6,   ,7   ]
-            #   R1   R2   R3     oR4    R5    R6
 
-            # keys
-            middle_index = int(len(keys) / 2)  # always works for odd list length
+            # split keys
+            middle_index = len(keys) // 2  # floor division
             middle_key = keys[middle_index]
-            left_key_sublist = keys[:middle_index]
-            right_key_sublist = keys[middle_index + 1:]
+            keys_left_node = keys[:middle_index]
+            keys_right_node = keys[middle_index + 1:]
 
-            # children
+            # split children
+            children = self.children
+            children_left_node = children[:int(len(children) // 2 - 1)]
+            children_right_node = children[int(len(children) / 2):]
 
-            # [    1,   3,   6,   ,7    ]
-            # [ R1   R2   R3   R4    R5 ]
+            # update current node (left_node)
+            self.keys = keys_left_node
+            self.children = children_left_node
 
-            # insert key 5 with OR4
-
-            # [    1,   3,   |5|,    6,   ,7   ]
-            #   R1   R2   R3     0R4    R5    R6
-
-            # [    1,   3,   |5|,    6,   ,7   ]
-            #   R1   R2   R3     0R4    R5    R6
-
-            # [    1,   3,  ]     |5|    [    6,   ,7   ]
-            #   R1   R2   R3              0R4    R5    R6
-
-            # insert the "Overflow-Node" at key_insert_index + 1
-
-            sons = self.sons
-            sons.insert(key_insert_index + 1, self.getOverflow()[1])
-            left_sons_sublist = sons[:len(sons)/2 - 1]  # length of sons with overflow is always even
-            right_sons_sublist = sons[len(sons)/2:]
-
-            # update current node with keys before the middle key
-            self.keys = left_key_sublist
-            self.sons = left_sons_sublist
-            # reset Overflow
-            self.setOverflow([])
-
-            # todo: Split Children
-            return middle_key, Node(self.k, keys=right_sublist)
+            return self, middle_key, Node(self.k, keys=keys_right_node, children=children_right_node,
+                                          parent=self.parent)
 
     def getSubtree(self, key_to_search):
         """
+        Find the subtree, in which a key has to saved.
 
         Args:
             key_to_search(int): Key
@@ -131,30 +121,31 @@ class Node:
 
         """
 
+        # iterate over the nodes keys until key_to_search is smaller than a key, to find the subtree that must contain
+        # key_to_search
         for index, key in enumerate(self.keys):
-            if key is None or key_to_search < key:
+            if key_to_search < key:
                 # The index of "key" is equal to index of the child node that should be searched next.
                 # This is seen in the example below for key_to_search = 2, where (key_to_search < key)
                 # is first true for key=3 (node.keys[1]). Since the keys with values less than 3 and
                 # greater than 2 lie by definition in the subtree referenced by R2, one should recursively
-                # search this son. R2(node.sons[1]) has the same index as the current key.
-                # node.keys:            [1,   3,   7,   8]
-                # correspondences:      /    /    /    /
-                # node.sons:         [R1,  R2,  R3,  R4,  R5]
+                # search this son. R2(node.children[1]) has the same index as the current key.
+                # node.keys:               [1,   3,   7,   8]
+                # correspondences:         /    /    /    /
+                # node.children:         [R1,  R2,  R3,  R4,  R5]
 
-                # When not all keys are occupied, and key_to_search is greater than all keys, the loop needs to stop
-                # at the first None occurrence and pick the child node at that index as seen below
-                # node.keys:            [1,   3,  None, None]
-                # correspondences:      /    /    /    /
-                # node.sons:         [R1,  R2,  R3,  R4,  R5] --> R3 would need to be picked
+                if self.isLeaf():
+                    # a leaf has no children, key is not in the tree
+                    return None
+                else:
+                    return self.children[index]
 
-                # return child node, can be None
-                return self.sons[index]
-
-        # This get´s executed, when the for-loop completes, this only happens, if "key_to_search" is greater
-        # than all of the nodes keys. The key is in the subtree, where the last reference of node.sons points to.
-
-        return self.sons[-1]
+        # "key_to_search" is greater than all of the nodes keys
+        # If the node isn´t a leaf, the key is in the subtree, where the last reference of node.children points to.
+        if self.isLeaf():
+            return None
+        else:
+            return self.children[-1]
 
     def isLeaf(self):
         """
@@ -165,17 +156,56 @@ class Node:
 
         """
 
-        return self.sons == [None] * (2 * self.k + 1)
+        return self.children == []
+
+    def isOverflow(self):
+        """
+        Checks, if the node had an overflow. This happens, when the max number of key elements of (2*k) is exceeded.
+
+        Returns:
+            bool: True, if an overflow occurred
+
+        """
+        return len(self.keys) > 2 * self.k
+
+    def insert_key_sorted(self, insert_key):
+        """
+        Insert key into the correct position of the nodes sorted key array and return the index.
+
+        Args:
+            insert_key(int): Key to be inserted
+
+        Returns:
+            int: Index of new key
+
+        """
+        for index, key in enumerate(self.keys):
+            if insert_key < key:
+                self.keys.insert(index, insert_key)
+                return index
+
+        self.keys.append(insert_key)
+        return len(self.keys) - 1
+
+    def __str__(self):
+        """
+        Override the stringify method of Node, return in string representation.
+
+        Returns:
+            str: Node string
+
+        """
+        return f'[ {"".join(str(x) + " " for x in self.keys)}]'
 
     # getters and setters
 
-    def getOverflow(self):
-        return self.overflow
-
-    def setOverflow(self, overflow):
-        self.overflow = overflow
-
     def getParent(self):
+        """
+
+        Returns:
+            Node: Parent of current node
+
+        """
         return self.parent
 
     def setParent(self, parent):
