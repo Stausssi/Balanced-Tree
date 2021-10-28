@@ -1,6 +1,7 @@
 import sys
+import ctypes
 
-# from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
 from GUI import MainWindow
@@ -10,7 +11,11 @@ def main():
     application = QApplication(sys.argv)
     application.setApplicationName("Balancierter Baum")
     application.setStyle("Fusion")
-    # application.setWindowIcon(QIcon("icon.svg"))
+
+    # Icon from: https://icons8.com/icon/47388/hierarchy"
+    application.setWindowIcon(QIcon("GUI/icon.png"))
+    # This statement is needed for the icon to show in the taskbar
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("stuttgart.DHBW.DatenbankenII.BBaum.1.0")
 
     # Create the MainWindow instance
     _ = MainWindow()

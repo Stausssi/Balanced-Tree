@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Callable
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
@@ -186,10 +187,10 @@ class MainWindow(QWidget):
 
         Args:
             text (str): The text the dialog should display.
-            callback (def): A callback, which will be called if the user confirms the dialog.
+            callback (Callable): A callback, which will be called if the user confirms the dialog.
             dialogType (DialogType): The messageType of dialog. This will determine the layout of the dialog.
             hasCancel (bool): Whether the dialog should have a cancel button
-            onFail (def): The callback to execute on cancellation of the dialog.
+            onFail (Callable or None): The callback to execute on cancellation of the dialog.
 
         Returns:
             None: Nothing
