@@ -4,7 +4,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame
 
-from GUI import createHorizontalLayout, createVerticalLayout, DialogType, ConfirmationDialog
+from GUI import createHorizontalLayout, createVerticalLayout, DialogType, ConfirmationDialog, displayUserMessage
+from util import readCSV
 
 
 class MainWindow(QWidget):
@@ -167,7 +168,7 @@ class MainWindow(QWidget):
         Args:
             text (str): The text the dialog should display.
             callback (def): A callback, which will be called if the user confirms the dialog.
-            dialogType (DialogType): The type of dialog. This will determine the layout of the dialog.
+            dialogType (DialogType): The messageType of dialog. This will determine the layout of the dialog.
             hasCancel (bool): Whether the dialog should have a cancel button
 
         Returns:
@@ -239,40 +240,14 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        # TODO: Implementieren
-        print("CSV:", path)
-        self.__csvContent = "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "lang\n" \
-                            "text"
+        try:
+            self.__csvContent = readCSV(path)
 
-        self.__showDialog(
-            "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.CSV_OVERVIEW, True
-        )
+            self.__showDialog(
+                "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.CSV_OVERVIEW, True
+            )
+        except FileNotFoundError as e:
+            displayUserMessage("reading CSV file", e)
 
     def __importCSVContents(self) -> None:
         """
@@ -284,9 +259,11 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        # TODO: Implementieren
+        # Create a list of lists containing the operation as the first element and the value as the second
+        entries = [line.split(",") for line in self.__csvContent.split("\n")]
+        print(entries)
+
         self.__csvContent = ""
-        pass
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """

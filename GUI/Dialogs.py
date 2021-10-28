@@ -29,7 +29,7 @@ class ConfirmationDialog(QDialog):
     Args:
         text (str): The main text of the dialog.
         parent (QWidget): The parent of the widget. Usually the MainWindow.
-        dialogType (DialogType): The type of the dialog. This will determine the inner layout of the dialog.
+        dialogType (DialogType): The messageType of the dialog. This will determine the inner layout of the dialog.
         hasCancel (bool): Whether the dialog should have an additional "Cancel" button
     """
 
@@ -46,26 +46,26 @@ class ConfirmationDialog(QDialog):
 
         # Create the buttons
         buttons = QDialogButtonBox.StandardButton.Ok
-        self.buttonBox = QDialogButtonBox()
+        self.__buttonBox = QDialogButtonBox()
         if hasCancel:
             buttons |= QDialogButtonBox.StandardButton.Cancel
-            self.buttonBox.rejected.connect(self.reject)
+            self.__buttonBox.rejected.connect(self.reject)
 
-        self.buttonBox.setStandardButtons(buttons)
-        self.buttonBox.accepted.connect(self.accept)
+        self.__buttonBox.setStandardButtons(buttons)
+        self.__buttonBox.accepted.connect(self.accept)
 
         # Disable the OK button by default
-        self.okButton = self.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
+        self.__okButton = self.__buttonBox.button(QDialogButtonBox.StandardButton.Ok)
 
         if dialogType != DialogType.NONE and dialogType != DialogType.RESET and dialogType != DialogType.CSV_OVERVIEW:
-            self.okButton.setEnabled(False)
+            self.__okButton.setEnabled(False)
 
         # Combine text, layout and buttons
-        self.innerLayout = self.__getInnerLayout(dialogType)
+        self.__innerLayout = self.__getInnerLayout(dialogType)
 
         layout.addWidget(textLabel)
-        layout.addLayout(self.innerLayout)
-        layout.addWidget(self.buttonBox)
+        layout.addLayout(self.__innerLayout)
+        layout.addWidget(self.__buttonBox)
 
         self.setLayout(layout)
 
@@ -74,7 +74,7 @@ class ConfirmationDialog(QDialog):
         This method returns the layout of the given DialogType.
 
         Args:
-            dialogType (DialogType): The type of the dialog
+            dialogType (DialogType): The messageType of the dialog
 
         Returns:
             QLayout or None: The inner layout of the dialog.
@@ -107,8 +107,12 @@ class ConfirmationDialog(QDialog):
                 # Create a layout containing a scroll view, which will be filled with the contents of the CSV file
                 from GUI import MainWindow
                 if isinstance(self.parent(), MainWindow):
-                    text = QLabel(self.parent().getCSVContent())
+                    text = QLabel()
                     text.setWordWrap(True)
+
+                    parent = self.parent()
+                    assert isinstance(parent, MainWindow)
+                    text.setText(parent.getCSVContent())
 
                     scrollView = QScrollArea()
                     scrollView.setWidget(text)
@@ -147,7 +151,7 @@ class ConfirmationDialog(QDialog):
             None: Nothing
         """
 
-        self.okButton.setEnabled(all([
+        self.__okButton.setEnabled(all([
             widget.hasAcceptableInput() for widget in self.__getInputWidgets() if isinstance(widget, QLineEdit)
         ]))
 
@@ -159,7 +163,7 @@ class ConfirmationDialog(QDialog):
             list[QWidget]: A list of widgets.
         """
 
-        return [self.innerLayout.itemAt(i).widget() for i in range(self.innerLayout.count())]
+        return [self.__innerLayout.itemAt(i).widget() for i in range(self.__innerLayout.count())]
 
     def getReturnValues(self) -> list[str]:
         """
