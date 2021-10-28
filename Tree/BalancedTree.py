@@ -1,3 +1,6 @@
+from .Node import Node
+
+
 class BalancedTree:
     """
     This class represents a balanced tree and handles operations (such as inserting or deleting) on it
@@ -9,31 +12,51 @@ class BalancedTree:
     def __init__(self, k):
         self.root = Node(k, isRoot=True)
 
-    def insert(self, key):
+    def insert(self, insert_key):
         """
         insert a new key into the binary tree
 
         Args:
-            key:
+            insert_key(int):
 
         Returns:
 
         """
-        target_node, key = self.search(key)
-        if key is not None:
+        # find the node to insert the new key
+        target_node, found_key = self.search(insert_key)
+        if found_key is not None:
             # key was found in tree
-            raise ValueError(f"{key} is already in the tree.")
+            raise ValueError(f"{found_key} is already in the tree.")
         else:
-            # insert key into tree in "node"
-            try:
-                target_node.addKey(key)
-            except ValueError:
-                # node is full, create new node
+            # insert "key" into tree in node "target_node"
+            self.__recursive_insert(target_node, insert_key)
 
+    def __recursive_insert(self, target_node, key, child=None):
+        """
+        Recursively inserts a key into a node, if the node is full, split the node and insert the middle key into
+        the parent.
 
+        Args:
+            target_node(Node): Node where the key should be inserted
+            key(int): key that should be inserted
+            child(Node): Reference to a child node, whose reference should be inserted after "key".
+                    This should only be used for inserting keys into non leaf nodes
 
+        Returns:
+            None
 
+        """
+        try:
+            target_node.addKeyAndChild(key, child)
+        except ValueError:
+            # split node into two nodes
+            middle_key, new_node = target_node.fixOverflowAndSplit()
+            parent_node = target_node.getParent()
 
+            # recursively insert middle_key into the parent node of the target_node
+            # also add reference to the new node after the middle_key in the parent node
+            # todo: Root ?
+            self.__recursive_insert(parent_node, middle_key, child=new_node)
 
     def search(self, key):
         """
@@ -74,124 +97,3 @@ class BalancedTree:
                 return node, None
             else:
                 return self.__recursive_search(child_node, key_to_search)
-
-
-class Node:
-    """
-    This class represents one node in the BalancedTree class
-
-    Args:
-        k(int): Order of the balanced tree, minimal number of keys in one node
-        isRoot(bool): Determines if Node is the leaf
-    """
-
-    def __init__(self, k, isRoot=False):
-        self.k = k
-        self.isRoot = isRoot
-        self.keys = [None] * (2 * k)  # min k max 2k entries
-        self.sons = [None] * (2 * k + 1)  # max 2k + 1 sons, references child nodes
-        self.parent = None
-        self.overflow = None
-
-    def hasKey(self, key):
-        """
-        Checks if a node contains a key
-
-        Args:
-            key(int): The key that should be checked
-
-        Returns:
-            bool: True, if key is in node
-
-        """
-
-        return key in self.keys
-
-    def addKey(self,key):
-        """
-        Adds a key to a node
-
-        Args:
-            key:
-
-        Returns:
-
-        """
-        if len(self.keys) < (2*self.k):
-            # get index of first None value
-            first_none_index = next(self.keys.index(key) for key in self.keys if key is None)
-            self.keys[first_none_index] = key
-        else:
-            self.overflow = key
-            raise ValueError("Node is full")
-
-    def fixOverflowAndSplit(self):
-        """
-        orders entries, split node correctly and returns a new node
-        use for leaf and tree overflows, also change links in non leaf nodes
-
-        Returns:
-
-        """
-        if self.overflow is not None:
-            keys = self.keys
-            # find index after which the new key has to be inserted
-            insert_index = next([self.keys.index(key) for key in self.keys if self.overflow < key])
-
-
-
-    def getSubtree(self, key_to_search):
-        """
-
-        Args:
-            key_to_search(int): Key
-
-        Returns:
-            Node: child node, whose subtree contains the key_to_search
-
-        """
-
-        for index, key in enumerate(self.keys):
-            if key is None or key_to_search < key:
-                # The index of "key" is equal to index of the child node that should be searched next.
-                # This is seen in the example below for key_to_search = 2, where (key_to_search < key)
-                # is first true for key=3 (node.keys[1]). Since the keys with values less than 3 and
-                # greater than 2 lie by definition in the subtree referenced by R2, one should recursively
-                # search this son. R2(node.sons[1]) has the same index as the current key.
-                # node.keys:            [1,   3,   7,   8]
-                # correspondences:      /    /    /    /
-                # node.sons:         [R1,  R2,  R3,  R4,  R5]
-
-                # When not all keys are occupied, and key_to_search is greater than all keys, the loop needs to stop
-                # at the first None occurrence and pick the child node at that index as seen below
-                # node.keys:            [1,   3,  None, None]
-                # correspondences:      /    /    /    /
-                # node.sons:         [R1,  R2,  R3,  R4,  R5] --> R3 would need to be picked
-
-                # return child node, can be None
-                return self.sons[index]
-
-        # This get´s executed, when the for-loop completes, this only happens, if "key_to_search" is greater
-        # than all of the nodes keys. The key is in the subtree, where the last reference of node.sons points to.
-
-        return self.sons[-1]
-
-    def isLeaf(self):
-        """
-        Checks, if the node is a leaf (has no children)
-
-        Returns:
-            bool: True if node is a leaf
-
-        """
-
-        return self.sons == [None] * (2 * self.k + 1)
-
-    # getters and setters
-
-    def getOverflow(self):
-        return self.overflow
-
-    def setOverflow(self, overflow):
-        self.overflow = overflow
-
