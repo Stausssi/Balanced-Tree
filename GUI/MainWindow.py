@@ -25,6 +25,7 @@ class MainWindow(QWidget):
         self.__scrollContent = ""
         self.__order = DEFAULT_ORDER
         self.__tree = BalancedTree(self.__order)
+        self.__enableAbleButtons = []
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -88,6 +89,8 @@ class MainWindow(QWidget):
                 nodes.remove([])
 
             layer += 1
+
+        self.__updateEnableAbleButtons()
 
     def __createFooter(self) -> QVBoxLayout:
         """
@@ -200,6 +203,9 @@ class MainWindow(QWidget):
             )
         )
 
+        # Save buttons which can be disabled to list
+        self.__enableAbleButtons = [button_find, button_delete, button_reset]
+
         # Combine the layouts
         configLayout = createHorizontalLayout([orderLayout, sliderLayout])
         configLayout.addStretch(0)
@@ -248,6 +254,17 @@ class MainWindow(QWidget):
             callback(*dialog.getReturnValues())
         elif onFail is not None:
             onFail()
+
+    def __updateEnableAbleButtons(self) -> None:
+        """
+        This method updated the enabled-state of the buttons, which can be en- or disabled.
+
+        Returns:
+            None: Nothing
+        """
+
+        for button in self.__enableAbleButtons:
+            button.setEnabled(not self.__tree.isEmpty())
 
     # ---------- [Callback functions] ---------- #
 
