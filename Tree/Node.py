@@ -195,7 +195,7 @@ class Node:
             str: Node string
 
         """
-        return f'[ {"".join(str(x) + " " for x in self.keys)}]'
+        return f'[{" ".join(str(x) for x in self.keys)}]'
 
     # getters and setters
 

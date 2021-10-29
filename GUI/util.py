@@ -84,3 +84,23 @@ def displayUserMessage(message, error=None, fatal=False) -> int:
         sys.exit(-1)
 
     return result
+
+
+def clearLayout(layout):
+    """
+    This method clears the given layout of all widgets and layouts.
+
+    Args:
+        layout (QLayout): The layout to clear.
+
+    Returns:
+        None: Nothing
+    """
+
+    while layout.count():
+        item = layout.takeAt(0)
+        if item.widget():
+            item.widget().deleteLater()
+            # item.widget().setParent(None)
+        elif item.layout():
+            clearLayout(item.layout())

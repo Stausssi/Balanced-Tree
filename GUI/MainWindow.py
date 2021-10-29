@@ -3,11 +3,12 @@ from typing import Callable
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame
+from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout
 
-from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage
+from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
 from .Dialogs import DialogType, ConfirmationDialog
 
+from Tree import BalancedTree, Node
 from util import readCSV
 from config import DEFAULT_ORDER, QIntValidator_MAX
 
@@ -20,33 +21,73 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Variables
+        self.__scrollContent = ""
+        self.__order = DEFAULT_ORDER
+        self.__tree = BalancedTree(self.__order)
+
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
         self.setGeometry(0, 0, 1280, 720)
 
-        # Create the window layout
-        self.setLayout(createVerticalLayout([self.__createTreeLayout(), self.__createFooter()]))
+        # Create the layout
+        self.__treeLayout = QVBoxLayout()
 
-        # Other variables
-        self.__scrollContent = ""
-        self.__order = DEFAULT_ORDER
+        self.setLayout(createVerticalLayout([self.__treeLayout, self.__createFooter()]))
+
+        self.updateTreeLayout()
 
         # Show this window
         self.show()
 
-    @staticmethod
-    def __createTreeLayout() -> QVBoxLayout:
+    def updateTreeLayout(self) -> None:
         """
-        This method creates the tree layout of the application.
+        This method updates the tree layout to show the given tree. Calling this function can be used to animate the
+        tree.
+
 
         Returns:
-            QVBoxLayout: The layout of the tree.
+            QVBoxLayout: The Tree layout
         """
 
-        temp = QLabel("Temporary main label")
-        temp.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Basic list contains the root only
+        nodes: list[list[Node]] = [[self.__tree.root]]
+        layer = 1
 
-        return createVerticalLayout([temp])
+        # Clear every item out of the layout
+        clearLayout(self.__treeLayout)
+
+        # Construct the layout
+        while len(nodes) > 0:
+            # print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
+
+            row = QHBoxLayout()
+
+            # Create a new layer
+            nodes.append([])
+            for node in nodes[0]:
+                # Create a label containing the keys of the node
+                label = QLabel(str(node).replace("[]", ""))
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                row.addSpacing(1)
+                row.addWidget(label)
+                row.addSpacing(1)
+
+                if node.children:
+                    # Add the children of the node to the next layer
+                    nodes[1].extend(node.children)
+
+            # Add the row to the layout
+            self.__treeLayout.addLayout(row)
+
+            # Remove the old layer
+            nodes = nodes[1:]
+
+            # Remove empty layers
+            for _ in range(nodes.count([])):
+                nodes.remove([])
+
+            layer += 1
 
     def __createFooter(self) -> QVBoxLayout:
         """
@@ -220,20 +261,30 @@ class MainWindow(QWidget):
         self.__order = int(value)
         self.__reset()
 
-    def __insert(self, value) -> None:
+    def __insert(self, value, bulkInsert=False) -> None:
         """
         This method is used to insert a value into the tree. It is used as a dialog-callback.
 
         Args:
             value (int): The new value
+            bulkInsert (bool): Whether a bulk of values is being inserted. This is true, if a CSV is imported.
 
         Returns:
             None: Nothing
+
+        Raises:
+            ValueError: If bulkInsert is true and the value couldn't be inserted into the tree.
         """
 
-        # TODO: Implementieren
-        print("Insert:", value)
-        pass
+        try:
+            self.__tree.insert(int(value))
+
+            self.updateTreeLayout()
+        except ValueError as e:
+            if not bulkInsert:
+                displayUserMessage("inserting value into the tree", e)
+            else:
+                raise e
 
     def __search(self, value) -> None:
         """
@@ -246,9 +297,11 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        # TODO: Implementieren
-        print("Search:", value)
-        pass
+        node, key = self.__tree.search(int(value))
+        if key:
+            displayUserMessage(f"{value} was found in the node {node}!")
+        else:
+            displayUserMessage(f"{value} couldn't be found!")
 
     def __delete(self, value) -> None:
         """
@@ -263,7 +316,6 @@ class MainWindow(QWidget):
 
         # TODO: Implementieren
         print("Delete:", value)
-        pass
 
     def __showCSVContents(self, path) -> None:
         """
@@ -310,7 +362,7 @@ class MainWindow(QWidget):
                     case "i":
                         try:
                             # Insert the value
-                            print(operation, "Insert value", value)
+                            self.__insert(value, True)
                         except ValueError as e:
                             # Add line to invalid lines
                             invalidLines.update({
@@ -337,6 +389,8 @@ class MainWindow(QWidget):
                 })
 
             lineCount += 1
+
+        # TODO: Remove artefacts
 
         if len(invalidLines) > 0:
             self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
@@ -394,9 +448,8 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        # TODO: Implementieren
-        print("reset")
-        pass
+        self.__tree = BalancedTree(self.__order)
+        self.updateTreeLayout()
 
     # ---------- [Public methods] ---------- #
 
