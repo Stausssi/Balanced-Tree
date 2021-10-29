@@ -150,7 +150,8 @@ class MainWindow(QWidget):
                 "Willst du den Baum wirklich zurücksetzen?",
                 self.__reset,
                 DialogType.RESET,
-                True
+                True,
+                None
             )
         )
 
