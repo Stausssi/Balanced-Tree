@@ -108,6 +108,16 @@ class BalancedTree:
             else:
                 return self.__recursive_search(child_node, key_to_search)
 
+    def isEmpty(self) -> bool:
+        """
+        Returns whether the tree is empty.
+
+        Returns:
+            bool: True, if the tree is empty, false otherwise
+        """
+
+        return self.root.isLeaf() and len(self.root.keys) == 0
+
     def __str__(self):
         """
         Prints the balanced tree.

@@ -128,7 +128,11 @@ class MainWindow(QWidget):
                     orderInput.setText,
                     str(self.__order)
                 )
-            ) if int(orderInput.text()) != self.__order else None
+            )
+            # Only show the dialog if the order has changed and the tree contains nodes
+            if int(orderInput.text()) != self.__order and not self.__tree.isEmpty()
+            # else update the order if the tree is empty
+            else self.__tree.isEmpty() and self.__updateOrder(int(orderInput.text()))
         )
 
         orderLayout = createVerticalLayout([orderLabel, orderInput])
@@ -301,7 +305,7 @@ class MainWindow(QWidget):
         if key:
             displayUserMessage(f"{value} was found in the node {node}!")
         else:
-            displayUserMessage(f"{value} couldn't be found!")
+            displayUserMessage(f"{value} couldn't be found! Last searched node: {node}")
 
     def __delete(self, value) -> None:
         """
