@@ -64,7 +64,9 @@ class MainWindow(QWidget):
         self.__graphicalNodes = {}
 
         # This dict contains the parent reference (QFrame) of every node
-        # references: dict[]
+        references: dict[Node, QFrame] = {
+            self.__tree.root: None
+        }
 
         # Construct the layout
         while len(nodes) > 0:
@@ -79,12 +81,12 @@ class MainWindow(QWidget):
             # Create a new layer
             nodes.append([])
             for node in nodes[0]:
-                print(node, "parent", node.getParent())
+                print(node)
                 # Create a label containing the keys of the node
                 row.addStretch(1)
 
                 graphicalNode = GraphicalNode(
-                    self.__order, node.keys, self.__graphicalNodes.get(node.getParent())
+                    self.__order, node.keys, references.get(node)
                 )
 
                 # Save graphical node
@@ -94,12 +96,21 @@ class MainWindow(QWidget):
 
                 row.addWidget(graphicalNode, 1)
 
-                if node.children:
+                children = node.children
+                if children:
                     # Add the children of the node to the next layer
-                    nodes[1].extend(node.children)
+                    nodes[1].extend(children)
+
+                    for index, child in enumerate(children):
+                        print(f"{child} will connect to the {index}. reference")
+
+                        references.update({
+                            child: graphicalNode.getReferences()[index]
+                        })
 
             row.addStretch(1)
             print("----------------")
+
             # Add the row to the layout
             self.__treeLayout.addLayout(row)
 

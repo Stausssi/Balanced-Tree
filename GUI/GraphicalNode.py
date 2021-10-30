@@ -11,7 +11,7 @@ class GraphicalNode(QWidget):
     Args:
         order (int): The order of the tree.
         keys (list[int]): The keys of the node.
-        parentReference (GraphicalNode): The parent reference this node is connected to.
+        parentReference (QFrame): The parent reference this node is connected to.
     """
 
     def __init__(self, order, keys, parentReference):
@@ -23,6 +23,8 @@ class GraphicalNode(QWidget):
             # Create a QHBoxLayout containing the references and keys in alternating order
             nodeLayout = QHBoxLayout()
             nodeLayout.setSpacing(0)
+
+            self._references: list[QFrame] = []
 
             # Start with a reference
             nodeLayout.addWidget(self.__createReference(), 1)
@@ -38,8 +40,7 @@ class GraphicalNode(QWidget):
 
             self.setLayout(nodeLayout)
 
-    @staticmethod
-    def __createReference() -> QFrame:
+    def __createReference(self) -> QFrame:
         """
         This method creates a QFrame representing a reference in the tree. A reference is half the size of a key.
 
@@ -50,6 +51,9 @@ class GraphicalNode(QWidget):
         frame = QFrame()
         frame.setFrameShape(QFrame.Shape.Panel)
         frame.setMinimumWidth(15)
+
+        # Save frame to references
+        self._references.append(frame)
 
         return frame
 
@@ -85,13 +89,31 @@ class GraphicalNode(QWidget):
         """
 
         if self.__parentReference:
-            parentGeometry = self.__parentReference.geometry()
-            parentX = parentGeometry.x() + parentGeometry.width() // 2
-            parentY = parentGeometry.y() + parentGeometry.height()
+            print("Geometry:", self.__parentReference.geometry())
+            print("Mapped:", self.__parentReference.mapTo(self.parent(), self.__parentReference.pos()))
 
+            # Get the relative position inside the parent and map it to the root widget
+            parentPos = self.__parentReference.mapTo(self.parent(), self.__parentReference.pos())
+            parentGeometry = self.__parentReference.geometry()
+            parentX = parentPos.x() + parentGeometry.width() // 2
+            parentY = parentPos.y() + parentGeometry.height()
+
+            print("Parent:", parentX, parentY)
+            # Get the own position
             selfX = self.geometry().x() + self.geometry().width() // 2
             selfY = self.geometry().y()
+            print("Self:", selfX, selfY)
 
             return QLine(parentX, parentY, selfX, selfY)
         else:
             return QLine(0, 0, 0, 0)
+
+    def getReferences(self) -> list[QFrame]:
+        """
+        This returns the list of references of a node.
+
+        Returns:
+            list[QFrame]: The list of references
+        """
+
+        return self._references
