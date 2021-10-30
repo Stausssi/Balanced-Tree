@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLine
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QFrame, QLabel
 
 from .util import createVerticalLayout
@@ -9,12 +9,15 @@ class GraphicalNode(QWidget):
     This class represents a graphical node in the tree and consists of 2*k keys and 2*k + 1 references.
 
     Args:
-        order (int): The order of the tree
-        keys (list[int]): The keys of the node
+        order (int): The order of the tree.
+        keys (list[int]): The keys of the node.
+        parentReference (GraphicalNode): The parent reference this node is connected to.
     """
 
-    def __init__(self, order, keys):
+    def __init__(self, order, keys, parentReference):
         super().__init__()
+
+        self.__parentReference = parentReference
 
         if keys:
             # Create a QHBoxLayout containing the references and keys in alternating order
@@ -72,3 +75,23 @@ class GraphicalNode(QWidget):
         frame.setMinimumWidth(keyLabel.minimumWidth())
 
         return frame
+
+    def getLine(self) -> QLine:
+        """
+        This method draws a line connecting this widget and the parent.
+
+        Returns:
+            QLine: The line which will connect this node to the reference
+        """
+
+        if self.__parentReference:
+            parentGeometry = self.__parentReference.geometry()
+            parentX = parentGeometry.x() + parentGeometry.width() // 2
+            parentY = parentGeometry.y() + parentGeometry.height()
+
+            selfX = self.geometry().x() + self.geometry().width() // 2
+            selfY = self.geometry().y()
+
+            return QLine(parentX, parentY, selfX, selfY)
+        else:
+            return QLine(0, 0, 0, 0)

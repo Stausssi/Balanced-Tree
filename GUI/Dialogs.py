@@ -6,8 +6,8 @@ from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QDialogButtonBox, QWidget, QLayout, QLineEdit, QPushButton, \
     QFormLayout, QFileDialog, QScrollArea
 
-from .util import createHorizontalLayout, createVerticalLayout
 from config import QIntValidator_MAX
+from .util import createHorizontalLayout, createVerticalLayout
 
 
 class DialogType(Enum):

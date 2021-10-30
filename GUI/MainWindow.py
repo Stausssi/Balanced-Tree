@@ -1,19 +1,17 @@
 import random
 from functools import partial
-from typing import Callable
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIntValidator
+from PyQt6.QtGui import QIntValidator, QPainter
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout, \
-    QSpacerItem
-
-from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
-from .Dialogs import DialogType, ConfirmationDialog
-from .GraphicalNode import GraphicalNode
+    QSizePolicy
 
 from Tree import BalancedTree, Node
-from util import readCSV
 from config import DEFAULT_ORDER, QIntValidator_MAX
+from util import readCSV
+from .Dialogs import DialogType, ConfirmationDialog
+from .GraphicalNode import GraphicalNode
+from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
 
 
 class MainWindow(QWidget):
@@ -28,7 +26,8 @@ class MainWindow(QWidget):
         self.__scrollContent = ""
         self.__order = DEFAULT_ORDER
         self.__tree = BalancedTree(self.__order)
-        self.__enableAbleButtons = []
+        self.__enableAbleButtons: list[QPushButton] = []
+        self.__graphicalNodes: dict[Node, GraphicalNode] = {}
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -51,7 +50,7 @@ class MainWindow(QWidget):
 
 
         Returns:
-            QVBoxLayout: The Tree layout
+            None: Nothing
         """
 
         # Basic list contains the root only
@@ -61,9 +60,15 @@ class MainWindow(QWidget):
         # Clear every item out of the layout
         clearLayout(self.__treeLayout)
 
+        # This dict contains every graphical node of the tree
+        self.__graphicalNodes = {}
+
+        # This dict contains the parent reference (QFrame) of every node
+        # references: dict[]
+
         # Construct the layout
         while len(nodes) > 0:
-            # print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
+            print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
 
             # Create a spacing row before the node
             self.__treeLayout.addLayout(QHBoxLayout(), 1)
@@ -74,17 +79,27 @@ class MainWindow(QWidget):
             # Create a new layer
             nodes.append([])
             for node in nodes[0]:
-                # print(node)
+                print(node, "parent", node.getParent())
                 # Create a label containing the keys of the node
                 row.addStretch(1)
-                row.addWidget(GraphicalNode(self.__order, node.keys), 1)
+
+                graphicalNode = GraphicalNode(
+                    self.__order, node.keys, self.__graphicalNodes.get(node.getParent())
+                )
+
+                # Save graphical node
+                self.__graphicalNodes.update({
+                    node: graphicalNode
+                })
+
+                row.addWidget(graphicalNode, 1)
 
                 if node.children:
                     # Add the children of the node to the next layer
                     nodes[1].extend(node.children)
 
             row.addStretch(1)
-            # print("----------------")
+            print("----------------")
             # Add the row to the layout
             self.__treeLayout.addLayout(row)
 
@@ -100,8 +115,24 @@ class MainWindow(QWidget):
 
             layer += 1
 
-        # print("\n\n")
+        print("\n\n")
         self.__updateEnableAbleButtons()
+
+    def paintEvent(self, _) -> None:
+        """
+        This method is called every time the widget is painted. This is used to draw the connections between the GraphicalNodes.
+
+        Args:
+            _: The paint event. Not needed for this method
+
+        Returns:
+            None: Nothing
+        """
+
+        # Draw every connection
+        painter = QPainter(self)
+        for node in self.__graphicalNodes.values():
+            painter.drawLine(node.getLine())
 
     def __createFooter(self) -> QVBoxLayout:
         """
