@@ -1,12 +1,15 @@
+import random
 from functools import partial
 from typing import Callable
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout
+from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout, \
+    QSpacerItem
 
 from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
 from .Dialogs import DialogType, ConfirmationDialog
+from .GraphicalNode import GraphicalNode
 
 from Tree import BalancedTree, Node
 from util import readCSV
@@ -62,24 +65,31 @@ class MainWindow(QWidget):
         while len(nodes) > 0:
             # print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
 
+            # Create a spacing row before the node
+            self.__treeLayout.addLayout(QHBoxLayout(), 1)
+
             row = QHBoxLayout()
+            row.setSpacing(0)
 
             # Create a new layer
             nodes.append([])
             for node in nodes[0]:
+                # print(node)
                 # Create a label containing the keys of the node
-                label = QLabel(str(node).replace("[]", ""))
-                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                row.addSpacing(1)
-                row.addWidget(label)
-                row.addSpacing(1)
+                row.addStretch(1)
+                row.addWidget(GraphicalNode(self.__order, node.keys), 1)
 
                 if node.children:
                     # Add the children of the node to the next layer
                     nodes[1].extend(node.children)
 
+            row.addStretch(1)
+            # print("----------------")
             # Add the row to the layout
             self.__treeLayout.addLayout(row)
+
+            # Create a spacing row after the node
+            self.__treeLayout.addLayout(QHBoxLayout(), 1)
 
             # Remove the old layer
             nodes = nodes[1:]
@@ -90,6 +100,7 @@ class MainWindow(QWidget):
 
             layer += 1
 
+        # print("\n\n")
         self.__updateEnableAbleButtons()
 
     def __createFooter(self) -> QVBoxLayout:
@@ -447,19 +458,47 @@ class MainWindow(QWidget):
             displayUserMessage("parsing user input", e)
             return
 
+        availableRange = upperBorder - lowerBorder + 1
+
         # Check whether given params are actually possible
         if any([lowerBorder < 0, upperBorder < 0, count <= 0]):
             displayUserMessage("parsing user input", ValueError("Negative values are not allowed!"))
         elif lowerBorder > upperBorder:
             displayUserMessage("parsing user input", ValueError("Lower border is bigger than upper border"))
-        elif count > upperBorder - lowerBorder + 1:
+        elif count > availableRange:
             displayUserMessage(
                 "parsing user input",
                 ValueError(f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}]")
             )
         else:
-            # TODO: Implementieren
-            print("Random fill:", lowerBorder, upperBorder, count)
+            # Get the existing keys
+            existing_keys = [
+                found for _, found in [
+                    self.__tree.search(i) for i in range(lowerBorder, upperBorder + 1)
+                ]
+                if found
+            ]
+
+            # print(f"existing keys in the range [{lowerBorder}, {upperBorder}]: {existing_keys}")
+            # Remove existing keys from availableRange
+            availableRange -= len(existing_keys)
+
+            # Check whether there are still enough values available
+            if count > availableRange:
+                displayUserMessage(
+                    "parsing user input",
+                    ValueError(
+                        f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}], since {existing_keys} "
+                        f"exist already!"
+                    )
+                )
+            else:
+                while count > 0:
+                    try:
+                        self.__insert(random.randint(lowerBorder, upperBorder), True)
+                        count -= 1
+                    except ValueError:
+                        pass
 
     def __reset(self) -> None:
         """
