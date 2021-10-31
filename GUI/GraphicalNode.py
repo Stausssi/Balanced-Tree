@@ -30,7 +30,7 @@ class GraphicalNode(QWidget):
             # Start with a reference
             nodeLayout.addWidget(self.__createReference(), 1)
 
-            for i in range(2*order):
+            for i in range(2 * order):
                 try:
                     key = self.__createKey(str(keys[i]))
                 except IndexError:
@@ -96,8 +96,16 @@ class GraphicalNode(QWidget):
             parentX = nodePos.x() + refGeometry.width() // 2
             parentY = nodePos.y() + refGeometry.height()
 
-            selfCenter = self.geometry().center()
-            return QLine(parentX, parentY, selfCenter.x(), selfCenter.y() - self.height() // 2)
+            # Get the reference in the middle
+            centerRef = self._references[len(self._references) // 2]
+
+            # Get the position and map it globally
+            centerPos = self.mapTo(self.parent(), centerRef.pos())
+            centerX = centerPos.x() + centerRef.width() // 2
+            centerY = centerPos.y()
+
+            # Create a line
+            return QLine(parentX, parentY, centerX, centerY)
         else:
             return QLine(0, 0, 0, 0)
 
