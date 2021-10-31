@@ -55,7 +55,8 @@ class BalancedTree:
             new_left_node, middle_key, new_right_node = node.split()
             # check if node is the root
             if node.getParent() is None:
-                # make new root
+                # node is the root
+                # make new root with the middle_key and the left and right node as children
                 new_root = Node(self.k, keys=[middle_key], children=[new_left_node, new_right_node], parent=None)
                 # set new root as parent
                 new_left_node.setParent(new_root)
@@ -119,21 +120,33 @@ class BalancedTree:
         return self.root.isLeaf() and len(self.root.keys) == 0
 
     def __str__(self):
-        """
-        Prints the balanced tree.
+        out = ""
+        # Basic list contains the root only
+        nodes: list[list[Node]] = [[self.root]]
+        layer = 1
 
-        Returns:
-            str: The balanced tree in string form
+        # Construct the layout
+        while len(nodes) > 0:
 
-        """
-        # print tree from top to bottom
-        output = ""
-        nodes_to_print = [self.root]
-        while len(nodes_to_print) != 0:
-            output += str(nodes_to_print[0]) + "\n"
-            append_list = nodes_to_print[0].children
-            if append_list:
-                nodes_to_print.extend(append_list)
-            nodes_to_print = nodes_to_print[1:]
+            out += "\n"
 
-        return output
+            # Create a new layer
+            nodes.append([])
+            for node in nodes[0]:
+                # Create a label containing the keys of the node
+                out += str(node)
+
+                if not node.isLeaf():
+                    # Add the children of the node to the next layer
+                    nodes[1].extend(node.children)
+
+            # Remove the old layer
+            nodes = nodes[1:]
+
+            # Remove empty layers
+            for _ in range(nodes.count([])):
+                nodes.remove([])
+
+            layer += 1
+
+        return out
