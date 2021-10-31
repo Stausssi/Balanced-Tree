@@ -69,7 +69,7 @@ class MainWindow(QWidget):
 
         # Construct the layout
         while len(nodes) > 0:
-            print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
+            # print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
 
             # Create a spacing row before the node
             self.__treeLayout.addLayout(QHBoxLayout(), 1)
@@ -80,7 +80,8 @@ class MainWindow(QWidget):
             # Create a new layer
             nodes.append([])
             for node in nodes[0]:
-                print(node)
+                # print(node)
+
                 # Create a label containing the keys of the node
                 row.addStretch(1)
 
@@ -101,14 +102,14 @@ class MainWindow(QWidget):
                     nodes[1].extend(children)
 
                     for index, child in enumerate(children):
-                        print(f"{child} will connect to the {index}. reference")
+                        # print(f"{child} will connect to the {index}. reference")
 
                         references.update({
                             child: (graphicalNode.getReferences()[index], graphicalNode)
                         })
 
             row.addStretch(1)
-            print("----------------")
+            # print("----------------")
 
             # Add the row to the layout
             self.__treeLayout.addLayout(row)
@@ -125,7 +126,7 @@ class MainWindow(QWidget):
 
             layer += 1
 
-        print("\n\n")
+        # print("\n\n")
         self.__updateEnableAbleButtons()
 
     def paintEvent(self, _) -> None:

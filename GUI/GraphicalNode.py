@@ -96,11 +96,8 @@ class GraphicalNode(QWidget):
             parentX = nodePos.x() + refGeometry.width() // 2
             parentY = nodePos.y() + refGeometry.height()
 
-            # Get the own position
-            selfX = self.geometry().x() + self.geometry().width() // 2
-            selfY = self.geometry().y()
-
-            return QLine(parentX, parentY, selfX, selfY)
+            selfCenter = self.geometry().center()
+            return QLine(parentX, parentY, selfCenter.x(), selfCenter.y() - self.height() // 2)
         else:
             return QLine(0, 0, 0, 0)
 
