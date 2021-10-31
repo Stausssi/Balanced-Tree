@@ -118,6 +118,31 @@ class BalancedTree:
 
         return self.root.isLeaf() and len(self.root.keys) == 0
 
+    def getAllValues(self) -> list[int]:
+        """
+        Returns all values kept in the tree.
+
+        Returns:
+            list[int]: A list of integers representing the values of the tree.
+        """
+
+        values = []
+        nodes = [self.root]
+
+        # As long as there are nodes in the list
+        while nodes:
+            for node in nodes:
+                # Remove this node from the list
+                nodes.remove(node)
+
+                # Add all children of the node to list
+                nodes.extend(node.children)
+
+                # Add the keys of the node to the value list
+                values.extend(node.keys)
+
+        return values
+
     def __str__(self):
         """
         Prints the balanced tree.

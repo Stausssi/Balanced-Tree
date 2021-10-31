@@ -1,9 +1,9 @@
 import random
 from functools import partial
 
-from PyQt6.QtCore import Qt, QRunnable, QThreadPool
-from PyQt6.QtGui import QIntValidator, QPainter
-from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPainter
+from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
@@ -169,27 +169,10 @@ class MainWindow(QWidget):
         orderLabel = QLabel("Order")
         orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        orderInput = QLineEdit()
-        orderInput.setText(str(DEFAULT_ORDER))
-        orderInput.setValidator(QIntValidator(1, QIntValidator_MAX))
-        orderInput.returnPressed.connect(
-            lambda: self.__showDialog(
-                "Willst du die Ordnung wirklich verändern? Dadurch wird der komplette Baum zurückgesetzt.",
-                partial(
-                    self.__updateOrder,
-                    int(orderInput.text())
-                ),
-                hasCancel=True,
-                onFail=partial(
-                    orderInput.setText,
-                    str(self.__order)
-                )
-            )
-            # Only show the dialog if the order has changed and the tree contains nodes
-            if int(orderInput.text()) != self.__order and not self.__tree.isEmpty()
-            # else update the order if the tree is empty
-            else self.__tree.isEmpty() and self.__updateOrder(int(orderInput.text()))
-        )
+        orderInput = QSpinBox()
+        orderInput.setRange(1, QIntValidator_MAX)
+        orderInput.valueChanged.connect(self.__updateOrder)
+        orderInput.setValue(DEFAULT_ORDER)
 
         orderLayout = createVerticalLayout([orderLabel, orderInput])
 
@@ -332,8 +315,22 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__order = int(value)
-        self.__reset()
+        if value != self.__order:
+            self.__order = int(value)
+
+            # Get the current values of the tree
+            values = self.__tree.getAllValues()
+
+            # Create a new tree with the new order
+            self.__tree = BalancedTree(self.__order)
+
+            # Insert every of the old values into the new tree
+            for value in values:
+                self.__insert(value, True)
+
+            # Trigger an update to remove artefacts
+            # TODO: Also update the window size
+            self.update()
 
     def __insert(self, value, bulkInsert=False) -> None:
         """

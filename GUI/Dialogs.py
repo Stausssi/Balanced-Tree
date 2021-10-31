@@ -84,6 +84,7 @@ class ConfirmationDialog(QDialog):
         match dialogType:
             case DialogType.INSERT | DialogType.FIND | DialogType.DELETE:
                 # Create a layout containing a singular number input
+                # TODO: Use a regular expression validator to support multiple values at the same time
                 numInput = QLineEdit()
                 numInput.setValidator(QIntValidator(0, QIntValidator_MAX))
                 numInput.textChanged.connect(self.__updateButtonEnabled)
