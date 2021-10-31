@@ -1,10 +1,9 @@
 import random
 from functools import partial
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QRunnable, QThreadPool
 from PyQt6.QtGui import QIntValidator, QPainter
-from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout, \
-    QSizePolicy
+from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout
 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
@@ -63,9 +62,9 @@ class MainWindow(QWidget):
         # This dict contains every graphical node of the tree
         self.__graphicalNodes = {}
 
-        # This dict contains the parent reference (QFrame) of every node
-        references: dict[Node, QFrame] = {
-            self.__tree.root: None
+        # This dict contains the parentInformation reference (QFrame) of every node
+        references: dict[Node, tuple[QFrame, GraphicalNode]] = {
+            self.__tree.root: (None, None)
         }
 
         # Construct the layout
@@ -105,7 +104,7 @@ class MainWindow(QWidget):
                         print(f"{child} will connect to the {index}. reference")
 
                         references.update({
-                            child: graphicalNode.getReferences()[index]
+                            child: (graphicalNode.getReferences()[index], graphicalNode)
                         })
 
             row.addStretch(1)
@@ -319,7 +318,7 @@ class MainWindow(QWidget):
         for button in self.__enableAbleButtons:
             button.setEnabled(not self.__tree.isEmpty())
 
-    # ---------- [Callback functions] ---------- #
+    # ---------- [Callback methods] ---------- #
 
     def __updateOrder(self, value) -> None:
         """
@@ -464,9 +463,8 @@ class MainWindow(QWidget):
 
             lineCount += 1
 
-        # TODO: Remove artefacts
-
         if len(invalidLines) > 0:
+            # TODO: Remove artefacts
             self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
 
             self.__showDialog(

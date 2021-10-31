@@ -11,13 +11,14 @@ class GraphicalNode(QWidget):
     Args:
         order (int): The order of the tree.
         keys (list[int]): The keys of the node.
-        parentReference (QFrame): The parent reference this node is connected to.
+        parentInformation (tuple[QFrame, GraphicalNode]): A tuple containing the reference and node this node is connected to.
     """
 
-    def __init__(self, order, keys, parentReference):
+    def __init__(self, order, keys, parentInformation):
         super().__init__()
 
-        self.__parentReference = parentReference
+        self.__parentReference = parentInformation[0]
+        self.__parentNode = parentInformation[1]
 
         if keys:
             # Create a QHBoxLayout containing the references and keys in alternating order
@@ -82,27 +83,22 @@ class GraphicalNode(QWidget):
 
     def getLine(self) -> QLine:
         """
-        This method draws a line connecting this widget and the parent.
+        This method draws a line connecting this widget and the parentInformation.
 
         Returns:
             QLine: The line which will connect this node to the reference
         """
 
         if self.__parentReference:
-            print("Geometry:", self.__parentReference.geometry())
-            print("Mapped:", self.__parentReference.mapTo(self.parent(), self.__parentReference.pos()))
+            # Get the relative position inside the parentNode and map it to the root widget
+            nodePos = self.__parentNode.mapTo(self.parent(), self.__parentReference.pos())
+            refGeometry = self.__parentReference.geometry()
+            parentX = nodePos.x() + refGeometry.width() // 2
+            parentY = nodePos.y() + refGeometry.height()
 
-            # Get the relative position inside the parent and map it to the root widget
-            parentPos = self.__parentReference.mapTo(self.parent(), self.__parentReference.pos())
-            parentGeometry = self.__parentReference.geometry()
-            parentX = parentPos.x() + parentGeometry.width() // 2
-            parentY = parentPos.y() + parentGeometry.height()
-
-            print("Parent:", parentX, parentY)
             # Get the own position
             selfX = self.geometry().x() + self.geometry().width() // 2
             selfY = self.geometry().y()
-            print("Self:", selfX, selfY)
 
             return QLine(parentX, parentY, selfX, selfY)
         else:
