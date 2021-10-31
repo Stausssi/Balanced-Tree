@@ -1,16 +1,16 @@
+import random
 from functools import partial
-from typing import Callable
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QLineEdit, QVBoxLayout, QFrame, QHBoxLayout
-
-from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
-from .Dialogs import DialogType, ConfirmationDialog
+from PyQt6.QtGui import QPainter
+from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
 from Tree import BalancedTree, Node
-from util import readCSV
 from config import DEFAULT_ORDER, QIntValidator_MAX
+from util import readCSV
+from .Dialogs import DialogType, ConfirmationDialog
+from .GraphicalNode import GraphicalNode
+from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
 
 
 class MainWindow(QWidget):
@@ -25,6 +25,8 @@ class MainWindow(QWidget):
         self.__scrollContent = ""
         self.__order = DEFAULT_ORDER
         self.__tree = BalancedTree(self.__order)
+        self.__enableAbleButtons: list[QPushButton] = []
+        self.__graphicalNodes: dict[Node, GraphicalNode] = {}
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -47,7 +49,7 @@ class MainWindow(QWidget):
 
 
         Returns:
-            QVBoxLayout: The Tree layout
+            None: Nothing
         """
 
         # Basic list contains the root only
@@ -57,28 +59,63 @@ class MainWindow(QWidget):
         # Clear every item out of the layout
         clearLayout(self.__treeLayout)
 
+        # This dict contains every graphical node of the tree
+        self.__graphicalNodes = {}
+
+        # This dict contains the parentInformation reference (QFrame) of every node
+        references: dict[Node, tuple[QFrame, GraphicalNode]] = {
+            self.__tree.root: (None, None)
+        }
+
         # Construct the layout
         while len(nodes) > 0:
             # print(f"Layer {layer}: {[node.keys for node in nodes[0]]}")
 
+            # Create a spacing row before the node
+            self.__treeLayout.addLayout(QHBoxLayout(), 1)
+
             row = QHBoxLayout()
+            row.setSpacing(0)
 
             # Create a new layer
             nodes.append([])
             for node in nodes[0]:
-                # Create a label containing the keys of the node
-                label = QLabel(str(node).replace("[]", ""))
-                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                row.addSpacing(1)
-                row.addWidget(label)
-                row.addSpacing(1)
+                # print(node)
 
-                if node.children:
+                # Create a label containing the keys of the node
+                row.addStretch(1)
+
+                graphicalNode = GraphicalNode(
+                    self.__order, node.keys, references.get(node)
+                )
+
+                # Save graphical node
+                self.__graphicalNodes.update({
+                    node: graphicalNode
+                })
+
+                row.addWidget(graphicalNode, 1)
+
+                children = node.children
+                if children:
                     # Add the children of the node to the next layer
-                    nodes[1].extend(node.children)
+                    nodes[1].extend(children)
+
+                    for index, child in enumerate(children):
+                        # print(f"{child} will connect to the {index}. reference")
+
+                        references.update({
+                            child: (graphicalNode.getReferences()[index], graphicalNode)
+                        })
+
+            row.addStretch(1)
+            # print("----------------")
 
             # Add the row to the layout
             self.__treeLayout.addLayout(row)
+
+            # Create a spacing row after the node
+            self.__treeLayout.addLayout(QHBoxLayout(), 1)
 
             # Remove the old layer
             nodes = nodes[1:]
@@ -88,6 +125,25 @@ class MainWindow(QWidget):
                 nodes.remove([])
 
             layer += 1
+
+        # print("\n\n")
+        self.__updateEnableAbleButtons()
+
+    def paintEvent(self, _) -> None:
+        """
+        This method is called every time the widget is painted. This is used to draw the connections between the GraphicalNodes.
+
+        Args:
+            _: The paint event. Not needed for this method
+
+        Returns:
+            None: Nothing
+        """
+
+        # Draw every connection
+        painter = QPainter(self)
+        for node in self.__graphicalNodes.values():
+            painter.drawLine(node.getLine())
 
     def __createFooter(self) -> QVBoxLayout:
         """
@@ -113,27 +169,10 @@ class MainWindow(QWidget):
         orderLabel = QLabel("Order")
         orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        orderInput = QLineEdit()
-        orderInput.setText(str(DEFAULT_ORDER))
-        orderInput.setValidator(QIntValidator(1, QIntValidator_MAX))
-        orderInput.returnPressed.connect(
-            lambda: self.__showDialog(
-                "Willst du die Ordnung wirklich verändern? Dadurch wird der komplette Baum zurückgesetzt.",
-                partial(
-                    self.__updateOrder,
-                    int(orderInput.text())
-                ),
-                hasCancel=True,
-                onFail=partial(
-                    orderInput.setText,
-                    str(self.__order)
-                )
-            )
-            # Only show the dialog if the order has changed and the tree contains nodes
-            if int(orderInput.text()) != self.__order and not self.__tree.isEmpty()
-            # else update the order if the tree is empty
-            else self.__tree.isEmpty() and self.__updateOrder(int(orderInput.text()))
-        )
+        orderInput = QSpinBox()
+        orderInput.setRange(1, QIntValidator_MAX)
+        orderInput.valueChanged.connect(self.__updateOrder)
+        orderInput.setValue(DEFAULT_ORDER)
 
         orderLayout = createVerticalLayout([orderLabel, orderInput])
 
@@ -200,6 +239,9 @@ class MainWindow(QWidget):
             )
         )
 
+        # Save buttons which can be disabled to list
+        self.__enableAbleButtons = [button_find, button_delete, button_reset]
+
         # Combine the layouts
         configLayout = createHorizontalLayout([orderLayout, sliderLayout])
         configLayout.addStretch(0)
@@ -249,7 +291,18 @@ class MainWindow(QWidget):
         elif onFail is not None:
             onFail()
 
-    # ---------- [Callback functions] ---------- #
+    def __updateEnableAbleButtons(self) -> None:
+        """
+        This method updated the enabled-state of the buttons, which can be en- or disabled.
+
+        Returns:
+            None: Nothing
+        """
+
+        for button in self.__enableAbleButtons:
+            button.setEnabled(not self.__tree.isEmpty())
+
+    # ---------- [Callback methods] ---------- #
 
     def __updateOrder(self, value) -> None:
         """
@@ -262,8 +315,22 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__order = int(value)
-        self.__reset()
+        if value != self.__order:
+            self.__order = int(value)
+
+            # Get the current values of the tree
+            values = self.__tree.getAllValues()
+
+            # Create a new tree with the new order
+            self.__tree = BalancedTree(self.__order)
+
+            # Insert every of the old values into the new tree
+            for value in values:
+                self.__insert(value, True)
+
+            # Trigger an update to remove artefacts
+            # TODO: Also update the window size
+            self.update()
 
     def __insert(self, value, bulkInsert=False) -> None:
         """
@@ -394,9 +461,8 @@ class MainWindow(QWidget):
 
             lineCount += 1
 
-        # TODO: Remove artefacts
-
         if len(invalidLines) > 0:
+            # TODO: Remove artefacts
             self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
 
             self.__showDialog(
@@ -430,19 +496,47 @@ class MainWindow(QWidget):
             displayUserMessage("parsing user input", e)
             return
 
+        availableRange = upperBorder - lowerBorder + 1
+
         # Check whether given params are actually possible
         if any([lowerBorder < 0, upperBorder < 0, count <= 0]):
             displayUserMessage("parsing user input", ValueError("Negative values are not allowed!"))
         elif lowerBorder > upperBorder:
             displayUserMessage("parsing user input", ValueError("Lower border is bigger than upper border"))
-        elif count > upperBorder - lowerBorder + 1:
+        elif count > availableRange:
             displayUserMessage(
                 "parsing user input",
                 ValueError(f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}]")
             )
         else:
-            # TODO: Implementieren
-            print("Random fill:", lowerBorder, upperBorder, count)
+            # Get the existing keys
+            existing_keys = [
+                found for _, found in [
+                    self.__tree.search(i) for i in range(lowerBorder, upperBorder + 1)
+                ]
+                if found
+            ]
+
+            # print(f"existing keys in the range [{lowerBorder}, {upperBorder}]: {existing_keys}")
+            # Remove existing keys from availableRange
+            availableRange -= len(existing_keys)
+
+            # Check whether there are still enough values available
+            if count > availableRange:
+                displayUserMessage(
+                    "parsing user input",
+                    ValueError(
+                        f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}], since {existing_keys} "
+                        f"exist already!"
+                    )
+                )
+            else:
+                while count > 0:
+                    try:
+                        self.__insert(random.randint(lowerBorder, upperBorder), True)
+                        count -= 1
+                    except ValueError:
+                        pass
 
     def __reset(self) -> None:
         """
