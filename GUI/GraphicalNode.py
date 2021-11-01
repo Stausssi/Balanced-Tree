@@ -83,7 +83,7 @@ class GraphicalNode(QWidget):
 
     def getLine(self) -> QLine:
         """
-        This method draws a line connecting this widget and the parentInformation.
+        This method creates a line connecting this widget and the parentReference.
 
         Returns:
             QLine: The line which will connect this node to the reference

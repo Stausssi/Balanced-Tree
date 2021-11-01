@@ -6,6 +6,8 @@ from PyQt6.QtWidgets import QApplication
 
 from GUI import MainWindow
 
+mainWindow = None
+
 
 def main():
     application = QApplication(sys.argv)
@@ -18,7 +20,8 @@ def main():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("stuttgart.DHBW.DatenbankenII.BBaum.1.0")
 
     # Create the MainWindow instance
-    _ = MainWindow()
+    global mainWindow
+    mainWindow = MainWindow()
 
     # Execute the Application
     application.exec()

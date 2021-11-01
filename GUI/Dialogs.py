@@ -55,9 +55,9 @@ class ConfirmationDialog(QDialog):
         self.__buttonBox.setStandardButtons(buttons)
         self.__buttonBox.accepted.connect(self.accept)
 
-        # Disable the OK button by default
         self.__okButton = self.__buttonBox.button(QDialogButtonBox.StandardButton.Ok)
 
+        # Disable the OK button by default
         if dialogType != DialogType.NONE and dialogType != DialogType.RESET and dialogType != DialogType.SCROLL_CONTENT:
             self.__okButton.setEnabled(False)
 

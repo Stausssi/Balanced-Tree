@@ -1,8 +1,9 @@
 import random
 from functools import partial
+from typing import Optional
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
 from Tree import BalancedTree, Node
@@ -27,6 +28,7 @@ class MainWindow(QWidget):
         self.__tree = BalancedTree(self.__order)
         self.__enableAbleButtons: list[QPushButton] = []
         self.__graphicalNodes: dict[Node, GraphicalNode] = {}
+        self.__searchNode: Optional[GraphicalNode] = None
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -46,7 +48,6 @@ class MainWindow(QWidget):
         """
         This method updates the tree layout to show the given tree. Calling this function can be used to animate the
         tree.
-
 
         Returns:
             None: Nothing
@@ -131,7 +132,8 @@ class MainWindow(QWidget):
 
     def paintEvent(self, _) -> None:
         """
-        This method is called every time the widget is painted. This is used to draw the connections between the GraphicalNodes.
+        This method is called every time the widget is painted. This is used to draw the connections between the
+        GraphicalNodes.
 
         Args:
             _: The paint event. Not needed for this method
@@ -143,6 +145,10 @@ class MainWindow(QWidget):
         # Draw every connection
         painter = QPainter(self)
         for node in self.__graphicalNodes.values():
+            if self.__searchNode == node:
+                painter.setPen(QColor(0, 255, 0))
+                painter.drawRect(self.__searchNode.geometry())
+
             painter.drawLine(node.getLine())
 
     def __createFooter(self) -> QVBoxLayout:
@@ -152,6 +158,17 @@ class MainWindow(QWidget):
         Returns:
             QVBoxLayout: The layout containing the buttons
         """
+
+        # Order input
+        orderLabel = QLabel("Order")
+        orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        orderInput = QSpinBox()
+        orderInput.setRange(1, QIntValidator_MAX)
+        orderInput.valueChanged.connect(self.__updateOrder)
+        orderInput.setValue(DEFAULT_ORDER)
+
+        orderLayout = createVerticalLayout([orderLabel, orderInput])
 
         # Create the animation speed slider
         sliderLabel = QLabel("Animation speed: 1")
@@ -164,17 +181,6 @@ class MainWindow(QWidget):
         slider.sliderReleased.connect(lambda: print("slider released"))
 
         sliderLayout = createVerticalLayout([sliderLabel, slider])
-
-        # Order input
-        orderLabel = QLabel("Order")
-        orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        orderInput = QSpinBox()
-        orderInput.setRange(1, QIntValidator_MAX)
-        orderInput.valueChanged.connect(self.__updateOrder)
-        orderInput.setValue(DEFAULT_ORDER)
-
-        orderLayout = createVerticalLayout([orderLabel, orderInput])
 
         # Create the buttons
         button_insert = QPushButton("Insert")
@@ -326,9 +332,12 @@ class MainWindow(QWidget):
 
             # Insert every of the old values into the new tree
             for value in values:
-                self.__insert(value, True)
+                try:
+                    self.__insert(value, True)
+                except ValueError as e:
+                    print(e)
 
-            # Trigger an update to remove artefacts
+            # Trigger an update to remove artefacts (old connections)
             # TODO: Also update the window size
             self.update()
 
@@ -461,7 +470,6 @@ class MainWindow(QWidget):
             lineCount += 1
 
         if len(invalidLines) > 0:
-            # TODO: Remove artefacts
             self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
 
             self.__showDialog(
@@ -559,3 +567,16 @@ class MainWindow(QWidget):
         """
 
         return self.__scrollContent
+
+    def animateSearch(self, treeNode) -> None:
+        """
+        This method returns the corresponding graphical node of the given tree node.
+
+        Args:
+            treeNode (Node): The node to animate
+
+        Returns:
+            None: Nothing
+        """
+
+        self.__searchNode = self.__graphicalNodes.get(treeNode)
