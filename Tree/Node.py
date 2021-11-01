@@ -106,8 +106,14 @@ class Node:
             self.keys = keys_left_node
             self.children = children_left_node
 
-            return self, middle_key, Node(self.k, keys=keys_right_node, children=children_right_node,
-                                          parent=self.parent)
+            new_right_node = Node(self.k, keys=keys_right_node, children=children_right_node,
+                                  parent=self.parent)
+
+            # set new_right_node as the parent of it´s children
+            for child in new_right_node.children:
+                child.setParent(new_right_node)
+
+            return self, middle_key, new_right_node
 
     def getSubtree(self, key_to_search):
         """
