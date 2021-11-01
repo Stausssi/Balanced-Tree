@@ -77,7 +77,7 @@ class BalancedTree:
             key(int): Key that is searched for in the balanced tree
 
         Returns:
-            Tuple(Node,int): An Integer if the key was found, else None
+            Tuple[Node,int]: An Integer if the key was found, else None
 
         """
         # recursively search the tree for "key"
@@ -108,6 +108,166 @@ class BalancedTree:
                 return node, None
             else:
                 return self.__recursive_search(child_node, key_to_search)
+
+    def delete(self, key) -> None:
+        """
+        Delete a key from the balanced tree. This is an implementation of the following algorithm
+        (https://www.cs.rhodes.edu/~kirlinp/courses/db/f16/handouts/btrees-deletion.pdf):
+
+        Deletion from a leaf node
+            1. Search for the value to delete.
+            2. If the value is in a leaf node, simply delete it from the node.
+            3. If underflow happens, rebalance the tree as described in section "Rebalancing after deletion" below.
+
+        Deletion from an internal node
+            1. Choose a new separator (the largest element in the left subtree), remove it from the leaf node it is in,
+            and replace the element to be deleted with the new separator.
+            2. The previous step deleted an element (the new separator) from a leaf node. If that leaf node is now
+            deficient (has fewer than the required number of nodes), then rebalance the tree starting from the leaf
+            node.
+
+        Rebalancing after deletion
+        Rebalancing starts from a leaf and proceeds toward the root until the tree is balanced. If deleting an element
+        from a node has brought it under the minimum size, then some elements must be redistributed to bring all
+        nodes up to the minimum. Usually, the redistribution involves moving an element from a sibling node that has
+        more than the minimum number of nodes. That redistribution operation is called a rotation. If no sibling can
+        spare a node, then the deficient node must be merged with a sibling. The merge causes the parent to lose a
+        separator element, so the parent may become deficient and need rebalancing. The merging and rebalancing
+        may continue all the way to the root. Since the minimum element count doesn't apply to the root, making the
+        root be the only deficient node is not a problem. The algorithm to rebalance the tree is as follows:
+
+        • If the deficient node's right sibling exists and has more than the minimum number of elements, then rotate
+        left
+            1. Copy the separator from the parent to the end of the deficient node (the separator moves down; the
+            deficient node now has the minimum number of elements)
+            2. Replace the separator in the parent with the first element of the right sibling (right sibling loses one
+            node but still has at least the minimum number of elements)
+            3. The tree is now balanced
+
+        • Otherwise, if the deficient node's left sibling exists and has more than the minimum number of elements,
+        then rotate right
+            1. Copy the separator from the parent to the start of the deficient node (the separator moves down;
+            deficient node now has the minimum number of elements)
+            2. Replace the separator in the parent with the last element of the left sibling (left sibling loses one
+            node but still has at least the minimum number of elements)
+            3. The tree is now balanced
+
+        • Otherwise, if both immediate siblings have only the minimum number of elements, then merge with a
+        sibling sandwiching their separator taken off from their parent
+            1. Copy the separator to the end of the left node (the left node may be the deficient node or it may be
+            the sibling with the minimum number of elements)
+            2. Move all elements from the right node to the left node (the left node now has the maximum number
+            of elements, and the right node – empty)
+            3. Remove the separator from the parent along with its empty right child (the parent loses an element)
+
+        • If the parent is the root and now has no elements, then free it and make the merged node the
+        new root (tree becomes shallower)
+        • Otherwise, if the parent has fewer than the required number of elements, then rebalance the
+        parent
+
+        Args:
+            key(int): key to delete
+
+        Returns:
+            None
+
+        """
+
+        # find the node to delete the key
+        target_node, found_key = self.search(key)
+        if found_key is not None:
+            # check if target_node is leaf node
+            if target_node.isLeaf():
+                # delete from leaf and rebalance the tree, if an underflow occurred
+                target_node.deleteKey()
+                if target_node.isUnderflow():
+                    self.__recursive_rebalance(target_node)
+            else:
+                # target_node is an internal node
+
+                # pop largest element in left subtree of target_node
+                predecessor_node, predecessor_key = self.__get_in_order_predecessor(target_node, key)
+                # replace element that should be deleted with the predecessor_key
+                target_node.replace_key(key, predecessor_key)
+
+                # fix predecessor node if it had an underflow
+                if predecessor_node.isUnderflow():
+                    self.__recursive_rebalance(predecessor_node)
+        else:
+            # key wasn´t found in tree
+            raise ValueError(f"{found_key} is not in the tree.")
+
+    def __recursive_rebalance(self, node):
+        """
+        Recursively rebalance the tree upwards from the given node
+
+        Args:
+            node:
+
+        Returns:
+
+        """
+
+    def __get_in_order_predecessor(self, node, key):
+        """
+        Get the largest key in the subtree of the left child of the given node and key. Return the key and the node
+        it is in.
+
+        Args:
+            node:
+            key:
+
+        Returns:
+
+        """
+
+        if not node.hasKey(key):
+            return ValueError(f"Node does not contain {key}")
+        elif node.isLeaf():
+            return ValueError("Node is a leaf and does not have a in order predecessor")
+        else:
+            left_child = node.getChildren()[node.getKeys().index(key) + 1]
+
+            traversing_node = left_child
+
+            # traverse the tree with the last children of the node until a leaf is reached
+            while not traversing_node.isLeaf():
+                traversing_node = traversing_node.getChildren()[-1]
+
+            largest_key = traversing_node.getKeys()[-1]
+            traversing_node.deleteKey(largest_key)
+
+            # return the biggest key in the leaf node
+            return traversing_node,largest_key
+
+    def __get_in_order_successor(self, node, key):
+        """
+        Get the smallest key in the subtree of the right child of the given node and key. Return the key and the node
+        it is in.
+
+        Args:
+            node:
+            key:
+
+        Returns:
+
+        """
+
+        if not node.hasKey(key):
+            return ValueError(f"Node does not contain {key}")
+        elif node.isLeaf():
+            return ValueError("Node is a leaf and does not have a in order successor")
+        else:
+            right_child = node.getChildren()[node.getKeys().index(key)]
+
+            traversing_node = right_child
+
+            # traverse the tree with the first children of a node until a leaf is reached
+            while not traversing_node.isLeaf():
+                traversing_node = traversing_node.getChildren()[0]
+
+            # return the smallest key in the leaf node
+            return traversing_node, traversing_node.getKeys()[0]
 
     def isEmpty(self) -> bool:
         """
