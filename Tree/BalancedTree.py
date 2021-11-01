@@ -1,5 +1,5 @@
 from .Node import Node
-import itertools
+import config
 
 
 class BalancedTree:
@@ -98,6 +98,8 @@ class BalancedTree:
 
         """
 
+        config.mainWindow.animateSearch(node)
+
         if node.hasKey(key_to_search):
             # the key is returned, data could also be returned
             return node, key_to_search
@@ -180,7 +182,7 @@ class BalancedTree:
             # check if target_node is leaf node
             if target_node.isLeaf():
                 # delete from leaf and rebalance the tree, if an underflow occurred
-                target_node.deleteKey()
+                target_node.deleteKey(found_key)
                 if target_node.isUnderflow():
                     self.__recursive_rebalance(target_node)
             else:
@@ -213,6 +215,8 @@ class BalancedTree:
         right_sibling, seperator_key_index_right = deficient_node.get_right_sibling()
         left_sibling, seperator_key_index_left = deficient_node.get_left_sibling()
 
+        parent = deficient_node.getParent()
+
         # check if either left or right sibling exist and have more than k elements
         # if so, rotate, else merge
 
@@ -223,16 +227,24 @@ class BalancedTree:
             # rotate right
             self.__rotate_right(deficient_node, left_sibling, seperator_key_index_left)
         else:
-            # if left sibling exist, merge with left sibling, else merge with right sibling
+            # if right sibling exist, merge with right sibling, else merge with left sibling
 
             if right_sibling is not None:
-                left_merge_node = deficient_node
-                right_merge_node = right_sibling
+                #
+                merged_node = self.__merge_nodes(deficient_node, right_sibling, seperator_key_index_right)
             else:
-                left_merge_node = left_sibling
-                right_merge_node = deficient_node
+                #
+                merged_node = self.__merge_nodes(left_sibling, deficient_node, seperator_key_index_left)
 
-    def __merge_nodes(self, left_node, right_node, seperator_index):
+            # parent has now one element less than before.
+            # if parent is the root and now has no elements, make the merged node the new root
+            if parent.isRoot() and parent.getKeys() == []:
+                self.root = merged_node
+            elif parent.isUnderflow():
+                # if parent has not enough elements, recursively rebalance the parent
+                self.__recursive_rebalance(parent)
+
+    def __merge_nodes(self, left_node, right_node, seperator_index) -> Node:
         """
 
         Args:
@@ -241,6 +253,7 @@ class BalancedTree:
             seperator_index(int):
 
         Returns:
+            Node:
 
         """
 
@@ -253,13 +266,15 @@ class BalancedTree:
         keys.extend(right_node.getKeys())
         children = left_node.getChildren()
         children.extend(right_node.getChildren())
-        merged_node = Node(self.k, keys=keys, children=children,parent=parent)
+        merged_node = Node(self.k, keys=keys, children=children, parent=parent)
 
         # remove seperator from parent
         parent.deleteKey(seperator)
         # remove child before seperator and replace reference to child after seperator with new node
         parent.deleteChild(left_node)
         parent.setChildren(merged_node, seperator_index + 1)
+
+        return merged_node
 
     def __rotate_left(self, deficient_node, right_sibling, seperator_index):
         """

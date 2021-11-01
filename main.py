@@ -4,9 +4,8 @@ import ctypes
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
+import config
 from GUI import MainWindow
-
-mainWindow = None
 
 
 def main():
@@ -20,7 +19,8 @@ def main():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("stuttgart.DHBW.DatenbankenII.BBaum.1.0")
 
     # Create the MainWindow instance
-    main.mainWindow = MainWindow()
+    config.mainWindow = MainWindow()
+
 
     # Execute the Application
     application.exec()
