@@ -99,7 +99,7 @@ class Node:
 
             # split children
             children = self.children
-            children_left_node = children[:int(len(children) // 2 - 1)]
+            children_left_node = children[:int(len(children) // 2)]
             children_right_node = children[int(len(children) / 2):]
 
             # update current node (left_node)
