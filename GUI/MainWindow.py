@@ -1,8 +1,9 @@
 import random
 from functools import partial
+from typing import Optional
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
 from Tree import BalancedTree, Node
@@ -27,6 +28,7 @@ class MainWindow(QWidget):
         self.__tree = BalancedTree(self.__order)
         self.__enableAbleButtons: list[QPushButton] = []
         self.__graphicalNodes: dict[Node, GraphicalNode] = {}
+        self.__searchNode: Optional[GraphicalNode] = None
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -130,7 +132,8 @@ class MainWindow(QWidget):
 
     def paintEvent(self, _) -> None:
         """
-        This method is called every time the widget is painted. This is used to draw the connections between the GraphicalNodes.
+        This method is called every time the widget is painted. This is used to draw the connections between the
+        GraphicalNodes.
 
         Args:
             _: The paint event. Not needed for this method
@@ -142,6 +145,10 @@ class MainWindow(QWidget):
         # Draw every connection
         painter = QPainter(self)
         for node in self.__graphicalNodes.values():
+            if self.__searchNode == node:
+                painter.setPen(QColor(0, 255, 0))
+                painter.drawRect(self.__searchNode.geometry())
+
             painter.drawLine(node.getLine())
 
     def __createFooter(self) -> QVBoxLayout:
@@ -561,3 +568,16 @@ class MainWindow(QWidget):
         """
 
         return self.__scrollContent
+
+    def animateSearch(self, treeNode) -> None:
+        """
+        This method returns the corresponding graphical node of the given tree node.
+
+        Args:
+            treeNode (Node): The node to animate
+
+        Returns:
+            None: Nothing
+        """
+
+        self.__searchNode = self.__graphicalNodes.get(treeNode)
