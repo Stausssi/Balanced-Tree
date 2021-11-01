@@ -1,4 +1,5 @@
 from .Node import Node
+import itertools
 
 
 class BalancedTree:
@@ -197,16 +198,114 @@ class BalancedTree:
             # key wasn´t found in tree
             raise ValueError(f"{found_key} is not in the tree.")
 
-    def __recursive_rebalance(self, node):
+    def __recursive_rebalance(self, deficient_node):
         """
-        Recursively rebalance the tree upwards from the given node
+        Recursively rebalance the tree upwards from the given node. Rebalancing starts from a leaf and proceeds
+        towards the root until the tree is balanced.
 
         Args:
-            node:
+            deficient_node(Node):
 
         Returns:
 
         """
+
+        right_sibling, seperator_key_index_right = deficient_node.get_right_sibling()
+        left_sibling, seperator_key_index_left = deficient_node.get_left_sibling()
+
+        # check if either left or right sibling exist and have more than k elements
+        # if so, rotate, else merge
+
+        if right_sibling is not None and not right_sibling.has_minimal_elements():
+            # rotate left
+            self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
+        elif left_sibling is not None and not left_sibling.has_minimal_elements():
+            # rotate right
+            self.__rotate_right(deficient_node, left_sibling, seperator_key_index_left)
+        else:
+            # if left sibling exist, merge with left sibling, else merge with right sibling
+
+            if right_sibling is not None:
+                left_merge_node = deficient_node
+                right_merge_node = right_sibling
+            else:
+                left_merge_node = left_sibling
+                right_merge_node = deficient_node
+
+    def __merge_nodes(self, left_node, right_node, seperator_index):
+        """
+
+        Args:
+            left_node(Node):
+            right_node(Node):
+            seperator_index(int):
+
+        Returns:
+
+        """
+
+        parent = left_node.getParent()
+        seperator = parent.getKeys()[seperator_index]
+        left_node.addKeyAndChild(seperator)
+
+        # create new node from the left and right nodes keys/children
+        keys = left_node.getKeys()
+        keys.extend(right_node.getKeys())
+        children = left_node.getChildren()
+        children.extend(right_node.getChildren())
+        merged_node = Node(self.k, keys=keys, children=children,parent=parent)
+
+        # remove seperator from parent
+        parent.deleteKey(seperator)
+        # remove child before seperator and replace reference to child after seperator with new node
+        parent.deleteChild(left_node)
+        parent.setChildren(merged_node, seperator_index + 1)
+
+    def __rotate_left(self, deficient_node, right_sibling, seperator_index):
+        """
+
+        Args:
+            deficient_node(Node):
+            right_sibling(Node):
+            seperator_index(int):
+
+        Returns:
+
+        """
+        parent = deficient_node.getParent()
+
+        # insert seperator at the end of deficient node
+        seperator_key = parent.getKeys()[seperator_index]
+        deficient_node.addKeyAndChild(seperator_key)
+
+        # Replace the separator in the parent with the first element of the right sibling
+        # and delete first element form right sibling
+        first_element_right_sibling = right_sibling.getKeys()[0]
+        right_sibling.deleteKey(first_element_right_sibling)
+        parent.replace_key(seperator_key, first_element_right_sibling)
+
+    def __rotate_right(self, deficient_node, left_sibling, seperator_index):
+        """
+
+        Args:
+            deficient_node(Node):
+            left_sibling(Node):
+            seperator_index(int):
+
+        Returns:
+
+        """
+        parent = deficient_node.getParent()
+
+        # insert seperator at the start of deficient node
+        seperator_key = parent.getKeys()[seperator_index]
+        deficient_node.addKeyAndChild(seperator_key)
+
+        # Replace the separator in the parent with the last element of the left sibling
+        last_element_left_sibling = left_sibling.getKeys()[-1]
+        # and delete last element from left sibling
+        left_sibling.deleteKey(last_element_left_sibling)
+        parent.replace_key(seperator_key, last_element_left_sibling)
 
     def __get_in_order_predecessor(self, node, key):
         """
@@ -238,7 +337,7 @@ class BalancedTree:
             traversing_node.deleteKey(largest_key)
 
             # return the biggest key in the leaf node
-            return traversing_node,largest_key
+            return traversing_node, largest_key
 
     def __get_in_order_successor(self, node, key):
         """
