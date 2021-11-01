@@ -153,7 +153,7 @@ class Node:
         else:
             return self.children[-1]
 
-    def isLeaf(self):
+    def isLeaf(self) -> bool:
         """
         Checks, if the node is a leaf (has no children)
 
@@ -164,7 +164,7 @@ class Node:
 
         return self.children == []
 
-    def isOverflow(self):
+    def isOverflow(self) -> bool:
         """
         Checks, if the node had an overflow. This happens, when the max number of key elements of (2*k) is exceeded.
 
@@ -174,7 +174,7 @@ class Node:
         """
         return len(self.keys) > 2 * self.k
 
-    def insert_key_sorted(self, insert_key):
+    def insert_key_sorted(self, insert_key) -> int:
         """
         Insert key into the correct position of the nodes sorted key array and return the index.
 
@@ -193,7 +193,7 @@ class Node:
         self.keys.append(insert_key)
         return len(self.keys) - 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Override the stringify method of Node, return in string representation.
 
