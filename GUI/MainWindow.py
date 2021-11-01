@@ -602,3 +602,5 @@ class MainWindow(QWidget):
         """
 
         self.__searchNode = self.__graphicalNodes.get(treeNode)
+
+        # TODO: reset search node
