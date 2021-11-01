@@ -47,7 +47,6 @@ class MainWindow(QWidget):
         This method updates the tree layout to show the given tree. Calling this function can be used to animate the
         tree.
 
-
         Returns:
             None: Nothing
         """
@@ -153,6 +152,17 @@ class MainWindow(QWidget):
             QVBoxLayout: The layout containing the buttons
         """
 
+        # Order input
+        orderLabel = QLabel("Order")
+        orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        orderInput = QSpinBox()
+        orderInput.setRange(1, QIntValidator_MAX)
+        orderInput.valueChanged.connect(self.__updateOrder)
+        orderInput.setValue(DEFAULT_ORDER)
+
+        orderLayout = createVerticalLayout([orderLabel, orderInput])
+
         # Create the animation speed slider
         sliderLabel = QLabel("Animation speed: 1")
         sliderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -164,17 +174,6 @@ class MainWindow(QWidget):
         slider.sliderReleased.connect(lambda: print("slider released"))
 
         sliderLayout = createVerticalLayout([sliderLabel, slider])
-
-        # Order input
-        orderLabel = QLabel("Order")
-        orderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        orderInput = QSpinBox()
-        orderInput.setRange(1, QIntValidator_MAX)
-        orderInput.valueChanged.connect(self.__updateOrder)
-        orderInput.setValue(DEFAULT_ORDER)
-
-        orderLayout = createVerticalLayout([orderLabel, orderInput])
 
         # Create the buttons
         button_insert = QPushButton("Insert")
@@ -319,16 +318,19 @@ class MainWindow(QWidget):
             self.__order = int(value)
 
             # Get the current values of the tree
-            values = self.__tree.getAllValues()
+            values = set(self.__tree.getAllValues())
 
             # Create a new tree with the new order
             self.__tree = BalancedTree(self.__order)
 
             # Insert every of the old values into the new tree
             for value in values:
-                self.__insert(value, True)
+                try:
+                    self.__insert(value, True)
+                except ValueError as e:
+                    print(e)
 
-            # Trigger an update to remove artefacts
+            # Trigger an update to remove artefacts (old connections)
             # TODO: Also update the window size
             self.update()
 
@@ -462,7 +464,6 @@ class MainWindow(QWidget):
             lineCount += 1
 
         if len(invalidLines) > 0:
-            # TODO: Remove artefacts
             self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
 
             self.__showDialog(

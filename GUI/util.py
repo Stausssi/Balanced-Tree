@@ -101,6 +101,7 @@ def clearLayout(layout):
         item = layout.takeAt(0)
         if item.widget():
             item.widget().deleteLater()
-            # item.widget().setParent(None)
+            # noinspection PyTypeChecker
+            item.widget().setParent(None)
         elif item.layout():
             clearLayout(item.layout())
