@@ -145,7 +145,7 @@ class BalancedTree:
         return values
 
     def __str__(self):
-        out = ""
+        out = []
         # Basic list contains the root only
         nodes: list[list[Node]] = [[self.root]]
         layer = 1
@@ -153,13 +153,14 @@ class BalancedTree:
         # Construct the layout
         while len(nodes) > 0:
 
-            out += "\n"
+            out.append("")
+            current_string = len(out) - 1
 
             # Create a new layer
             nodes.append([])
             for node in nodes[0]:
                 # Create a label containing the keys of the node
-                out += str(node)
+                out[current_string] += str(node)
 
                 if not node.isLeaf():
                     # Add the children of the node to the next layer
@@ -174,4 +175,10 @@ class BalancedTree:
 
             layer += 1
 
-        return out
+        # center all strings in the array based on the length of the last one
+        last_string_length = len(out[-1])
+        out_string = ""
+        for row in out:
+            out_string = out_string + "\n" + row.center(last_string_length)
+
+        return out_string
