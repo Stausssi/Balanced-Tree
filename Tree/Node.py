@@ -56,6 +56,37 @@ class Node:
         if child is not None:
             self.children.insert(key_insert_index + 1, child)
 
+    def deleteKey(self, key) -> None:
+        """
+        Delete a key from the node, if the node is a leaf.
+
+        Args:
+            key(int):
+
+        Returns:
+            None
+
+        """
+        if self.isLeaf():
+            self.keys.remove(key)
+        else:
+            raise ValueError("Cannot delete key, because node is not a leaf.")
+
+    def replace_key(self,old_key,new_key) -> None:
+        """
+
+        Args:
+            oldkey:
+            newkey:
+
+        Returns:
+            None
+
+        """
+
+        self.keys = [new_key if key == old_key else key for key in self.keys]
+
+
     def split(self):
         """
         Splits a node, where an overflow occurred into three parts:
@@ -174,6 +205,26 @@ class Node:
         """
         return len(self.keys) > 2 * self.k
 
+    def isUnderflow(self) -> bool:
+        """
+        Checks, if the node had an underflow. This happens, when the node has less than the minimum number of key
+        elements (k).
+
+        Returns:
+            bool: True, if an underflow occurred
+
+        """
+        return len(self.keys) < self.k
+
+    def has_minimal_elements(self) -> bool:
+        """
+        checks, if the node has minimal number of elements.
+
+        Returns:
+
+        """
+        return len(self.keys) == self.k
+
     def insert_key_sorted(self, insert_key) -> int:
         """
         Insert key into the correct position of the nodes sorted key array and return the index.
@@ -216,3 +267,9 @@ class Node:
 
     def setParent(self, parent):
         self.parent = parent
+
+    def getChildren(self):
+        return self.children
+
+    def getKeys(self):
+        return self.keys
