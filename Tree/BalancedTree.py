@@ -1,4 +1,5 @@
 from .Node import Node
+import config
 
 
 class BalancedTree:
@@ -96,6 +97,8 @@ class BalancedTree:
                             or (Node, None): key was not found, should be inserted in node
 
         """
+
+        config.mainWindow.animateSearch(node)
 
         if node.hasKey(key_to_search):
             # the key is returned, data could also be returned
