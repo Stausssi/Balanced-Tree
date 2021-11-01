@@ -318,7 +318,7 @@ class MainWindow(QWidget):
             self.__order = int(value)
 
             # Get the current values of the tree
-            values = set(self.__tree.getAllValues())
+            values = self.__tree.getAllValues()
 
             # Create a new tree with the new order
             self.__tree = BalancedTree(self.__order)
