@@ -20,8 +20,7 @@ def main():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("stuttgart.DHBW.DatenbankenII.BBaum.1.0")
 
     # Create the MainWindow instance
-    global mainWindow
-    mainWindow = MainWindow()
+    main.mainWindow = MainWindow()
 
     # Execute the Application
     application.exec()

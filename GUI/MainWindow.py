@@ -2,7 +2,7 @@ import random
 from functools import partial
 from typing import Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
@@ -25,6 +25,7 @@ class MainWindow(QWidget):
         # Variables
         self.__scrollContent = ""
         self.__order = DEFAULT_ORDER
+        self.__animationSpeed = 1
         self.__tree = BalancedTree(self.__order)
         self.__enableAbleButtons: list[QPushButton] = []
         self.__graphicalNodes: dict[Node, GraphicalNode] = {}
@@ -148,6 +149,8 @@ class MainWindow(QWidget):
             if self.__searchNode == node:
                 painter.setPen(QColor(0, 255, 0))
                 painter.drawRect(self.__searchNode.geometry())
+            else:
+                painter.setPen(QColor(0, 0, 0))
 
             painter.drawLine(node.getLine())
 
@@ -178,7 +181,7 @@ class MainWindow(QWidget):
         slider.setRange(1, 5)
         slider.setSingleStep(1)
         slider.valueChanged.connect(lambda value: sliderLabel.setText(f"Animation speed: {value}"))
-        slider.sliderReleased.connect(lambda: print("slider released"))
+        slider.valueChanged.connect(self.__updateAnimationSpeed)
 
         sliderLayout = createVerticalLayout([sliderLabel, slider])
 
@@ -338,8 +341,22 @@ class MainWindow(QWidget):
                     print(e)
 
             # Trigger an update to remove artefacts (old connections)
-            # TODO: Also update the window size
+            # TODO: Also update the window size -> This will also update the window size, if the user resized the window
+            #  --> Therefore, don't reset the window size
             self.update()
+
+    def __updateAnimationSpeed(self, value) -> None:
+        """
+        This method is called after the user updates the order the animation speed.
+
+        Args:
+            value (int): The new animation speed.
+
+        Returns:
+            None: Nothing
+        """
+
+        self.__animationSpeed = value
 
     def __insert(self, value, bulkInsert=False) -> None:
         """
@@ -357,8 +374,13 @@ class MainWindow(QWidget):
         """
 
         try:
-            self.__tree.insert(int(value))
+            # timer = QTimer(self)
+            # timer.setInterval(1000 // self.__animationSpeed)
+            # timer.setSingleShot(True)
+            # timer.timeout.connect(timerCallback)
+            # timer.start()
 
+            self.__tree.insert(int(value))
             self.updateTreeLayout()
         except ValueError as e:
             if not bulkInsert:
