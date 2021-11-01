@@ -72,7 +72,21 @@ class Node:
         else:
             raise ValueError("Cannot delete key, because node is not a leaf.")
 
-    def replace_key(self,old_key,new_key) -> None:
+    def deleteChild(self, child) -> None:
+        """
+        Delete a child from the node, if the node is a leaf.
+
+        Args:
+            child:
+
+        Returns:
+            None
+
+        """
+
+        self.children.remove(child)
+
+    def replace_key(self, old_key, new_key) -> None:
         """
 
         Args:
@@ -85,7 +99,6 @@ class Node:
         """
 
         self.keys = [new_key if key == old_key else key for key in self.keys]
-
 
     def split(self):
         """
@@ -195,6 +208,14 @@ class Node:
 
         return self.children == []
 
+    def isRoot(self) -> bool:
+        """
+
+        Returns:
+
+        """
+        return self.parent is None
+
     def isOverflow(self) -> bool:
         """
         Checks, if the node had an overflow. This happens, when the max number of key elements of (2*k) is exceeded.
@@ -265,6 +286,48 @@ class Node:
         """
         return self.parent
 
+    def get_right_sibling(self):
+        """
+
+        Returns:
+            Node
+
+        """
+
+        if self.isRoot():
+            return ValueError("No right sibling exist, node is root")
+        else:
+            # get index of node in the parent node.children on the right of the current node
+            own_index = self.parent.children.index(self)
+            right_index = self.parent.children.index(self) + 1
+
+            try:
+                # get the right_sibling and the index of the seperator key between this node and right_sibling
+                return self.parent.children[right_index], self.parent.keys[own_index]
+            except IndexError:
+                return None, None
+
+    def get_left_sibling(self):
+        """
+
+        Returns:
+            Node
+
+        """
+
+        if self.isRoot():
+            return ValueError("No left sibling exist, node is root")
+        else:
+            # get index of node in the parent node.children on the left of the current node
+            left_index = self.parent.children.index(self) - 1
+
+            try:
+                # get the left_sibling and the index of the seperator key between this node and left_sibling
+                # index of seperator key is the same as index of left_sibling.
+                return self.parent.children[left_index], self.parent.keys[left_index]
+            except IndexError:
+                return None, None
+
     def setParent(self, parent):
         self.parent = parent
 
@@ -273,3 +336,6 @@ class Node:
 
     def getKeys(self):
         return self.keys
+
+    def setChildren(self, child, index):
+        self.children[index] = child
