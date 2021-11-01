@@ -67,10 +67,8 @@ class Node:
             None
 
         """
-        if self.isLeaf():
-            self.keys.remove(key)
-        else:
-            raise ValueError("Cannot delete key, because node is not a leaf.")
+
+        self.keys.remove(key)
 
     def deleteChild(self, child) -> None:
         """
@@ -90,8 +88,8 @@ class Node:
         """
 
         Args:
-            oldkey:
-            newkey:
+            old_key:
+            new_key:
 
         Returns:
             None
@@ -303,7 +301,7 @@ class Node:
 
             try:
                 # get the right_sibling and the index of the seperator key between this node and right_sibling
-                return self.parent.children[right_index], self.parent.keys[own_index]
+                return self.parent.children[right_index], own_index
             except IndexError:
                 return None, None
 
@@ -324,7 +322,7 @@ class Node:
             try:
                 # get the left_sibling and the index of the seperator key between this node and left_sibling
                 # index of seperator key is the same as index of left_sibling.
-                return self.parent.children[left_index], self.parent.keys[left_index]
+                return self.parent.children[left_index], left_index
             except IndexError:
                 return None, None
 
