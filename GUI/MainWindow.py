@@ -416,7 +416,8 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__tree.delete(value)
+        self.__tree.delete(int(value))
+        self.updateTreeLayout()
 
     def __showCSVContents(self, path) -> None:
         """
