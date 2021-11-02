@@ -212,6 +212,8 @@ class BalancedTree:
 
         """
 
+        print(f"START REBALANCE DEFICIENT NODE: {deficient_node}")
+
         right_sibling, seperator_key_index_right = deficient_node.get_right_sibling()
         left_sibling, seperator_key_index_left = deficient_node.get_left_sibling()
 
@@ -222,18 +224,22 @@ class BalancedTree:
 
         if right_sibling is not None and not right_sibling.has_minimal_elements(): # fix --> smaller than ??!!!!
             # rotate left
+            print(f"ROTATE LEFT: {deficient_node}, {right_sibling}")
             self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
         elif left_sibling is not None and not left_sibling.has_minimal_elements():
             # rotate right
+            print(f"ROTATE RIGHT: {deficient_node}, {left_sibling}")
             self.__rotate_right(deficient_node, left_sibling, seperator_key_index_left)
         else:
             # if right sibling exist, merge with right sibling, else merge with left sibling
 
             if right_sibling is not None:
                 #
+                print(f"MERGE DEFICIENT NODE WITH RIGHT SIBLING: {right_sibling}")
                 merged_node = self.__merge_nodes(deficient_node, right_sibling, seperator_key_index_right)
             else:
                 #
+                print(f"MERGE DEFICIENT NODE WITH LEFT SIBLING: {left_sibling}")
                 merged_node = self.__merge_nodes(left_sibling, deficient_node, seperator_key_index_left)
 
             # parent has now one element less than before.
@@ -360,6 +366,8 @@ class BalancedTree:
 
             largest_key = traversing_node.getKeys()[-1]
             traversing_node.deleteKey(largest_key)
+
+            print(f"GET INORDER SUCCESSOR OF {node},{key}: {largest_key}")
 
             # return the biggest key in the leaf node
             return traversing_node, largest_key
