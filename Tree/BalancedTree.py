@@ -98,7 +98,7 @@ class BalancedTree:
 
         """
 
-        config.mainWindow.animateSearch(node)
+        config.mainWindow.addNoteToPath(node)
 
         if node.hasKey(key_to_search):
             # the key is returned, data could also be returned

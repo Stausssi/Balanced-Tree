@@ -16,7 +16,7 @@ from .util import createHorizontalLayout, createVerticalLayout, displayUserMessa
 
 class MainWindow(QWidget):
     """
-    This class represents the main window of the balanced __tree application.
+    This class represents the main window of the balanced tree application.
     """
 
     def __init__(self):
@@ -47,12 +47,12 @@ class MainWindow(QWidget):
 
         self.setLayout(createVerticalLayout([self.__treeLayout, self.__createFooter()]))
 
-        self.updateTreeLayout()
+        self.__updateTreeLayout()
 
         # Show this window
         self.show()
 
-    def updateTreeLayout(self) -> None:
+    def __updateTreeLayout(self) -> None:
         """
         This method updates the tree layout to show the given tree. Calling this function can be used to animate the
         tree.
@@ -337,15 +337,12 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        def finishedProcedure(errorList):
+        def finishedProcedure(errorList) -> None:
             """
             This method is called after the worker finished. It will reset used variables.
 
             Args:
                 errorList (list[Exception]): The errors that occurred during the operations
-
-            Returns:
-                None: Nothing
             """
 
             # Reset the worker
@@ -359,11 +356,10 @@ class MainWindow(QWidget):
 
             # Anzeigen der Fehlermeldungen (falls vorhanden)
             if len(errorList) > 0:
-                def resetScrollContent():
+                def resetScrollContent() -> None:
                     """
                     This method resets the scroll content string
                     """
-
                     self.__scrollContent = ""
 
                 self.__scrollContent = "\n".join([str(e) for e in errorList])
@@ -380,8 +376,8 @@ class MainWindow(QWidget):
         # Create a new worker
         worker = AsyncWorker(self, self.__animationSpeed, operations)
 
-        # Update the layout on the event
-        worker.refresh.connect(self.updateTreeLayout)
+        # Update the layout on the signal
+        worker.refresh.connect(self.__updateTreeLayout)
 
         # Enable the window again on finish
         worker.finished.connect(finishedProcedure)
@@ -453,7 +449,7 @@ class MainWindow(QWidget):
         try:
             self._tree.insert(int(value))
 
-            self.updateTreeLayout()
+            self.__updateTreeLayout()
         except ValueError as e:
             displayUserMessage("inserting value into the tree", e)
 
@@ -543,10 +539,10 @@ class MainWindow(QWidget):
             if operation.lower() in ["i", "d"] and len(value) == 1 and value[0].isdigit()
         ]
 
+        # Start the async task
         self.__runWorker(operations)
 
-        print("operations:", operations)
-
+        # TODO: invalid lines would be nice!
         # invalidLines: dict[int, str] = {}
         # lineCount = 1
         #
@@ -583,9 +579,9 @@ class MainWindow(QWidget):
         #         DialogType.SCROLL_CONTENT,
         #         False
         #     )
-
-        # Reset scroll content
-        self.__scrollContent = ""
+        #
+        # # Reset scroll content
+        # self.__scrollContent = ""
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """
@@ -612,13 +608,13 @@ class MainWindow(QWidget):
 
         # Check whether given params are actually possible
         if any([lowerBorder < 0, upperBorder < 0, count <= 0]):
-            displayUserMessage("parsing user input", ValueError("Negative __values are not allowed!"))
+            displayUserMessage("parsing user input", ValueError("Negative values are not allowed!"))
         elif lowerBorder > upperBorder:
             displayUserMessage("parsing user input", ValueError("Lower border is bigger than upper border"))
         elif count > availableRange:
             displayUserMessage(
                 "parsing user input",
-                ValueError(f"Can't fit {count} __values in the range [{lowerBorder}, {upperBorder}]")
+                ValueError(f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}]")
             )
         else:
             # Get the existing keys
@@ -629,20 +625,20 @@ class MainWindow(QWidget):
                 if found
             ]
 
-            # print(f"existing keys in the range [{lowerBorder}, {upperBorder}]: {existing_keys}")
             # Remove existing keys from availableRange
             availableRange -= len(existing_keys)
 
-            # Check whether there are still enough __values available
+            # Check whether there are still enough values available
             if count > availableRange:
                 displayUserMessage(
                     "parsing user input",
                     ValueError(
-                        f"Can't fit {count} __values in the range [{lowerBorder}, {upperBorder}], since {existing_keys} "
-                        f"exist already!"
+                        f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}], since {existing_keys}"
+                        f" exist already!"
                     )
                 )
             else:
+                # Start the worker
                 self.__runWorker([("lower", lowerBorder), ("upper", upperBorder), ("count", count)])
 
     def __reset(self) -> None:
@@ -654,7 +650,7 @@ class MainWindow(QWidget):
         """
 
         self._tree = BalancedTree(self.__order)
-        self.updateTreeLayout()
+        self.__updateTreeLayout()
 
     # ---------- [Public methods] ---------- #
 
@@ -678,12 +674,13 @@ class MainWindow(QWidget):
 
         return self._tree
 
-    def animateSearch(self, treeNode) -> None:
+    def addNoteToPath(self, treeNode) -> None:
         """
-        This method returns the corresponding graphical node of the given tree node.
+        This method appends the graphical node of the given treeNode to a list of GraphicalNodes representing the path
+        the search took.
 
         Args:
-            treeNode (Node): The node to animate
+            treeNode (Node): The node to animate to add to the path.
 
         Returns:
             None: Nothing
