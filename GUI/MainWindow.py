@@ -1,16 +1,14 @@
-import random
 from functools import partial
-from time import sleep
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer, QRunnable, QThreadPool, QThread, QObject
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
 from util import readCSV
-from .AsyncTasks import AsyncRangeInsert
+from .AsyncTasks import WorkerType, AsyncWorker
 from .Dialogs import DialogType, ConfirmationDialog
 from .GraphicalNode import GraphicalNode
 from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
@@ -18,7 +16,7 @@ from .util import createHorizontalLayout, createVerticalLayout, displayUserMessa
 
 class MainWindow(QWidget):
     """
-    This class represents the main window of the balanced tree application.
+    This class represents the main window of the balanced __tree application.
     """
 
     def __init__(self):
@@ -28,10 +26,12 @@ class MainWindow(QWidget):
         self.__scrollContent = ""
         self.__order = DEFAULT_ORDER
         self.__animationSpeed = 1
-        self.__tree = BalancedTree(self.__order)
+        self._tree = BalancedTree(self.__order)
         self.__enableAbleButtons: list[QPushButton] = []
+        self.__operationWidgets: list[QWidget] = []
         self.__graphicalNodes: dict[Node, GraphicalNode] = {}
         self.__searchNode: Optional[GraphicalNode] = None
+        self.__currentWorker: Optional[AsyncWorker] = None
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -57,7 +57,7 @@ class MainWindow(QWidget):
         """
 
         # Basic list contains the root only
-        nodes: list[list[Node]] = [[self.__tree.root]]
+        nodes: list[list[Node]] = [[self._tree.root]]
         layer = 1
 
         # Clear every item out of the layout
@@ -68,7 +68,7 @@ class MainWindow(QWidget):
 
         # This dict contains the parentInformation reference (QFrame) of every node
         references: dict[Node, tuple[QFrame, GraphicalNode]] = {
-            self.__tree.root: (None, None)
+            self._tree.root: (None, None)
         }
 
         # Construct the layout
@@ -132,6 +132,7 @@ class MainWindow(QWidget):
 
         # print("\n\n")
         self.__updateEnableAbleButtons()
+        self.update()
 
     def paintEvent(self, _) -> None:
         """
@@ -252,6 +253,7 @@ class MainWindow(QWidget):
 
         # Save buttons which can be disabled to list
         self.__enableAbleButtons = [button_find, button_delete, button_reset]
+        self.__operationWidgets = [orderInput, button_insert, button_csv, button_autofill]
 
         # Combine the layouts
         configLayout = createHorizontalLayout([orderLayout, sliderLayout])
@@ -310,8 +312,54 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        for button in self.__enableAbleButtons:
-            button.setEnabled(not self.__tree.isEmpty())
+        if self.__currentWorker is None:
+            for button in self.__enableAbleButtons:
+                button.setEnabled(not self._tree.isEmpty())
+
+    def __runWorker(self, workerType, values) -> None:
+        """
+        This method creates a separate worker thread.
+
+        Args:
+            workerType (WorkerType): The type of the worker
+            values (list[int]): The values to manipulate
+
+        Returns:
+            None: Nothing
+        """
+
+        def finishedProcedure():
+            # Reset the worker
+            self.__currentWorker = None
+
+            # Enable the widgets
+            for w in self.__operationWidgets:
+                w.setEnabled(True)
+
+            self.__updateEnableAbleButtons()
+
+        # Disable the operations and enable-able buttons
+        for widget in self.__operationWidgets + self.__enableAbleButtons:
+            widget.setEnabled(False)
+
+        # Create a new worker
+        worker = AsyncWorker(self, self.__animationSpeed, workerType, values)
+
+        # Update the layout on the event
+        worker.refresh.connect(self.updateTreeLayout)
+
+        # Print the error TODO: handle
+        worker.error.connect(lambda ex: print(ex))
+        worker.error.connect(worker.deleteLater)
+
+        # Enable the window again on finish
+        worker.finished.connect(finishedProcedure)
+        worker.finished.connect(worker.deleteLater)
+
+        # Start
+        worker.start()
+
+        self.__currentWorker = worker
 
     # ---------- [Callback methods] ---------- #
 
@@ -330,21 +378,15 @@ class MainWindow(QWidget):
             self.__order = int(value)
 
             # Get the current values of the tree
-            values = self.__tree.getAllValues()
+            values = self._tree.getAllValues()
 
             # Create a new tree with the new order
-            self.__tree = BalancedTree(self.__order)
+            self._tree = BalancedTree(self.__order)
 
-            # Insert every of the old values into the new tree
-            for value in values:
-                try:
-                    self.insert(value, True)
-                except ValueError as e:
-                    print(e)
+            # Insert every of the old __values into the new tree
+            self.__runWorker(WorkerType.INSERT, values)
 
             # Trigger an update to remove artefacts (old connections)
-            # TODO: Also update the window size -> This will also update the window size, if the user resized the window
-            #  --> Therefore, don't reset the window size
             self.update()
 
     def __updateAnimationSpeed(self, value) -> None:
@@ -358,7 +400,10 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__animationSpeed = value
+        self.__animationSpeed = int(value)
+
+        if self.__currentWorker is not None:
+            self.__currentWorker.updateAnimationSpeed(int(value))
 
     def insert(self, value, bulkInsert=False) -> None:
         """
@@ -376,13 +421,7 @@ class MainWindow(QWidget):
         """
 
         try:
-            # timer = QTimer(self)
-            # timer.setInterval(1000 // self.__animationSpeed)
-            # timer.setSingleShot(True)
-            # timer.timeout.connect(timerCallback)
-            # timer.start()
-            print("inserting ", value)
-            self.__tree.insert(int(value))
+            self._tree.insert(int(value))
             self.updateTreeLayout()
         except ValueError as e:
             if not bulkInsert:
@@ -401,7 +440,7 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        node, key = self.__tree.search(int(value))
+        node, key = self._tree.search(int(value))
         if key:
             displayUserMessage(f"{value} was found in the node {node}!")
         else:
@@ -418,7 +457,7 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__tree.delete(value)
+        self._tree.delete(value)
 
     def __showCSVContents(self, path) -> None:
         """
@@ -531,19 +570,19 @@ class MainWindow(QWidget):
 
         # Check whether given params are actually possible
         if any([lowerBorder < 0, upperBorder < 0, count <= 0]):
-            displayUserMessage("parsing user input", ValueError("Negative values are not allowed!"))
+            displayUserMessage("parsing user input", ValueError("Negative __values are not allowed!"))
         elif lowerBorder > upperBorder:
             displayUserMessage("parsing user input", ValueError("Lower border is bigger than upper border"))
         elif count > availableRange:
             displayUserMessage(
                 "parsing user input",
-                ValueError(f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}]")
+                ValueError(f"Can't fit {count} __values in the range [{lowerBorder}, {upperBorder}]")
             )
         else:
             # Get the existing keys
             existing_keys = [
                 found for _, found in [
-                    self.__tree.search(i) for i in range(lowerBorder, upperBorder + 1)
+                    self._tree.search(i) for i in range(lowerBorder, upperBorder + 1)
                 ]
                 if found
             ]
@@ -552,22 +591,17 @@ class MainWindow(QWidget):
             # Remove existing keys from availableRange
             availableRange -= len(existing_keys)
 
-            # Check whether there are still enough values available
+            # Check whether there are still enough __values available
             if count > availableRange:
                 displayUserMessage(
                     "parsing user input",
                     ValueError(
-                        f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}], since {existing_keys} "
+                        f"Can't fit {count} __values in the range [{lowerBorder}, {upperBorder}], since {existing_keys} "
                         f"exist already!"
                     )
                 )
             else:
-                # TODO: exception handling
-                self.setEnabled(False)
-                thread = AsyncRangeInsert(self, self.__animationSpeed, count, lowerBorder, upperBorder)
-                thread.insert.connect(lambda value: self.insert(value, True))
-                thread.finished.connect(partial(self.setEnabled, True))
-                thread.start()
+                self.__runWorker(WorkerType.RANGE_INSERT, [lowerBorder, upperBorder, count])
 
     def __reset(self) -> None:
         """
@@ -577,7 +611,7 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__tree = BalancedTree(self.__order)
+        self._tree = BalancedTree(self.__order)
         self.updateTreeLayout()
 
     # ---------- [Public methods] ---------- #
@@ -591,6 +625,16 @@ class MainWindow(QWidget):
         """
 
         return self.__scrollContent
+
+    def getTree(self) -> BalancedTree:
+        """
+        This method returns the tree of the window.
+
+        Returns:
+            BalancedTree: The balanced Tree
+        """
+
+        return self._tree
 
     def animateSearch(self, treeNode) -> None:
         """
