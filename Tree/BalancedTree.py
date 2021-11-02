@@ -179,11 +179,14 @@ class BalancedTree:
         # find the node to delete the key
         target_node, found_key = self.search(key)
         if found_key is not None:
+            print(f"FOUND KEY IN NODE: {target_node}")
             # check if target_node is leaf node
             if target_node.isLeaf():
                 # delete from leaf and rebalance the tree, if an underflow occurred
+                print(f"DELETE KEY FROM LEAF NODE: {target_node}")
                 target_node.deleteKey(found_key)
                 if target_node.isUnderflow():
+                    print(f"LEAF NODE UNDERFLOW: {target_node}")
                     self.__recursive_rebalance(target_node)
             else:
                 # target_node is an internal node
@@ -193,8 +196,11 @@ class BalancedTree:
                 # replace element that should be deleted with the successor_key
                 target_node.replace_key(key, successor_key)
 
+                print(f"REPLACE KEY WITH IN_ORDER_SUCCESSOR({successor_key}) FROM NODE: {successor_node}")
+
                 # fix successor node if it had an underflow
                 if successor_node.isUnderflow():
+                    print(f"SUCCESSOR NODE UNDERFLOW: {successor_node}")
                     self.__recursive_rebalance(successor_node)
         else:
             # key wasn´t found in tree
@@ -212,7 +218,7 @@ class BalancedTree:
 
         """
 
-        print(f"START REBALANCE DEFICIENT NODE: {deficient_node}")
+        print(f"NODE {deficient_node} IS DEFICIENET, START REBALANCING")
 
         right_sibling, seperator_key_index_right = deficient_node.get_right_sibling()
         left_sibling, seperator_key_index_left = deficient_node.get_left_sibling()
@@ -222,30 +228,35 @@ class BalancedTree:
         # check if either left or right sibling exist and have more than k elements
         # if so, rotate, else merge
 
-        if right_sibling is not None and not right_sibling.has_minimal_elements(): # fix --> smaller than ??!!!!
+        if right_sibling is not None and not right_sibling.has_minimal_elements(): # todo fix --> smaller than ??!!!!
             # rotate left
-            print(f"ROTATE LEFT: {deficient_node}, {right_sibling}")
+            print(f"ROTATE LEFT: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
             self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
+            print(f"AFTER ROTATION: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
         elif left_sibling is not None and not left_sibling.has_minimal_elements():
             # rotate right
-            print(f"ROTATE RIGHT: {deficient_node}, {left_sibling}")
+            print(f"ROTATE RIGHT: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
             self.__rotate_right(deficient_node, left_sibling, seperator_key_index_left)
+            print(f"AFTER ROTATION: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
         else:
             # if right sibling exist, merge with right sibling, else merge with left sibling
 
             if right_sibling is not None:
                 #
-                print(f"MERGE DEFICIENT NODE WITH RIGHT SIBLING: {right_sibling}")
+                print(f"MERGE DEFICIENT NODE WITH RIGHT SIBLING: DEF{deficient_node}, RIGHT SIBLING{right_sibling}")
                 merged_node = self.__merge_nodes(deficient_node, right_sibling, seperator_key_index_right)
+                print(f"MERGED NODE: {merged_node}")
             else:
                 #
-                print(f"MERGE DEFICIENT NODE WITH LEFT SIBLING: {left_sibling}")
+                print(f"MERGE DEFICIENT NODE WITH LEFT SIBLING: LEFT SIBLING{left_sibling}, DEF{deficient_node}")
                 merged_node = self.__merge_nodes(left_sibling, deficient_node, seperator_key_index_left)
+                print(f"MERGED NODE: {merged_node}")
 
             # parent has now one element less than before.
             # if parent is the root and now has no elements, make the merged node the new root
             if parent.isRoot() and parent.getKeys() == []:
                 self.root = merged_node
+                print("PARENT NODE IS ROOT AND EMPTY --> NEW ROOT")
             elif parent.isUnderflow():
                 # if parent has not enough elements, recursively rebalance the parent
                 self.__recursive_rebalance(parent)
