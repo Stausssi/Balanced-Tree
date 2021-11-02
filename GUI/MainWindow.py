@@ -498,7 +498,6 @@ class MainWindow(QWidget):
         self.__tree.delete(int(value))
         self.updateTreeLayout()
 
-
     def __showCSVContents(self, path) -> None:
         """
         This method displays the contents of a given CSV-file. It is used as a dialog-callback.
