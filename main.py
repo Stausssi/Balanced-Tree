@@ -21,7 +21,6 @@ def main():
     # Create the MainWindow instance
     config.mainWindow = MainWindow()
 
-
     # Execute the Application
     application.exec()
 

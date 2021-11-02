@@ -11,7 +11,8 @@ class GraphicalNode(QWidget):
     Args:
         order (int): The order of the tree.
         keys (list[int]): The keys of the node.
-        parentInformation (tuple[QFrame, GraphicalNode]): A tuple containing the reference and node this node is connected to.
+        parentInformation (tuple[QFrame, GraphicalNode]): A tuple containing the reference and node this node is
+            connected to.
     """
 
     def __init__(self, order, keys, parentInformation):
