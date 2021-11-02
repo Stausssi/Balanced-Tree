@@ -56,6 +56,30 @@ class Node:
         if child is not None:
             self.children.insert(key_insert_index + 1, child)
 
+    def insert_key(self, index, key):
+        """
+
+        Args:
+            index(int):
+            key(int):
+
+        Returns:
+
+        """
+        self.keys.insert(index, key)
+
+    def insert_child(self, index, child):
+        """
+
+        Args:
+            index(int):
+            child(Node):
+
+        Returns:
+
+        """
+        self.children.insert(index, child)
+
     def deleteKey(self, key) -> None:
         """
         Delete a key from the node, if the node is a leaf.
@@ -83,6 +107,30 @@ class Node:
         """
 
         self.children.remove(child)
+
+    def popKey(self, index) -> int:
+        """
+
+        Args:
+            index:
+
+        Returns:
+            int: key
+
+        """
+        return self.keys.pop(index)
+
+    def popChild(self, index):
+        """
+
+        Args:
+            index:
+
+        Returns:
+            Node: child
+
+        """
+        return self.children.pop(index)
 
     def replace_key(self, old_key, new_key) -> None:
         """
@@ -235,14 +283,14 @@ class Node:
         """
         return len(self.keys) < self.k
 
-    def has_minimal_elements(self) -> bool:
+    def more_than_minimal_elements(self) -> bool:
         """
         checks, if the node has minimal number of elements.
 
         Returns:
 
         """
-        return len(self.keys) <= self.k
+        return len(self.keys) > self.k
 
     def insert_key_sorted(self, insert_key) -> int:
         """
@@ -303,6 +351,7 @@ class Node:
                 # get the right_sibling and the index of the seperator key between this node and right_sibling
                 return self.parent.children[right_index], own_index
             except IndexError:
+                # no right sibling exists
                 return None, None
 
     def get_left_sibling(self):
@@ -319,12 +368,13 @@ class Node:
             # get index of node in the parent node.children on the left of the current node
             left_index = self.parent.children.index(self) - 1
 
-            try:
+            # when left_index is -1, no left sibling exists
+            if left_index < 0:
+                return None, None
+            else:
                 # get the left_sibling and the index of the seperator key between this node and left_sibling
                 # index of seperator key is the same as index of left_sibling.
                 return self.parent.children[left_index], left_index
-            except IndexError:
-                return None, None
 
     def setParent(self, parent):
         self.parent = parent
@@ -335,5 +385,5 @@ class Node:
     def getKeys(self):
         return self.keys
 
-    def setChildren(self, child, index):
+    def setChild(self, child, index):
         self.children[index] = child

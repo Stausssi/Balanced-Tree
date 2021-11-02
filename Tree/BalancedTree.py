@@ -228,12 +228,12 @@ class BalancedTree:
         left_sibling, seperator_key_index_left = deficient_node.get_left_sibling()
         parent = deficient_node.getParent()
 
-        if right_sibling is not None and not right_sibling.has_minimal_elements():  # todo fix --> smaller than ??!!!!
+        if right_sibling is not None and right_sibling.more_than_minimal_elements():
             # rotate left
             print(f"ROTATE LEFT: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
             self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
             print(f"AFTER ROTATION: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
-        elif left_sibling is not None and not left_sibling.has_minimal_elements():
+        elif left_sibling is not None and left_sibling.more_than_minimal_elements():
             # rotate right
             print(f"ROTATE RIGHT: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
             self.__rotate_right(deficient_node, left_sibling, seperator_key_index_left)
@@ -294,7 +294,7 @@ class BalancedTree:
         parent.deleteKey(seperator)
         # remove child after seperator and replace reference to child before seperator with new node
         parent.deleteChild(right_node)
-        parent.setChildren(merged_node, seperator_index)
+        parent.setChild(merged_node, seperator_index)
 
         return merged_node
 
@@ -313,13 +313,19 @@ class BalancedTree:
 
         # insert seperator at the end of deficient node
         seperator_key = parent.getKeys()[seperator_index]
-        deficient_node.addKeyAndChild(seperator_key)
+        deficient_node.insert_key(-1, seperator_key)
+
+        # insert first child of right_sibling at the end of deficient node if nodes are internal nodes
+        if not right_sibling.isLeaf():
+            first_child_right_sibling = right_sibling.popChild(0)
+            deficient_node.insert_child(-1, first_child_right_sibling)
+            # set parent to deficient node
+            first_child_right_sibling.setParent(deficient_node)
 
         # Replace the separator in the parent with the first element of the right sibling
-        # and delete first element form right sibling
-        first_element_right_sibling = right_sibling.getKeys()[0]
-        right_sibling.deleteKey(first_element_right_sibling)
-        parent.replace_key(seperator_key, first_element_right_sibling)
+        # and delete first key from right sibling
+        first_key_right_sibling = right_sibling.popKey(0)
+        parent.replace_key(seperator_key, first_key_right_sibling)
 
     @staticmethod
     def __rotate_right(deficient_node, left_sibling, seperator_index):
@@ -337,16 +343,23 @@ class BalancedTree:
 
         # insert seperator at the start of deficient node
         seperator_key = parent.getKeys()[seperator_index]
-        deficient_node.addKeyAndChild(seperator_key)
+        deficient_node.insert_key(0, seperator_key)
+
+        # insert last child of left_sibling at the start of deficient node if nodes are internal nodes
+        if not left_sibling.isLeaf():
+            last_child_left_sibling = left_sibling.popChild(-1)
+            # set parent to deficient node
+            last_child_left_sibling.setParent(deficient_node)
+            # insert at the start of deficient node
+            deficient_node.insert_child(0, last_child_left_sibling)
 
         # Replace the separator in the parent with the last element of the left sibling
-        last_element_left_sibling = left_sibling.getKeys()[-1]
         # and delete last element from left sibling
-        left_sibling.deleteKey(last_element_left_sibling)
-        parent.replace_key(seperator_key, last_element_left_sibling)
+        last_key_left_sibling = left_sibling.popKey(-1)
+        parent.replace_key(seperator_key, last_key_left_sibling)
 
     @staticmethod
-    def __get_in_order_successor(node, key):
+    def __get_in_order_successor(node, key): # todo: naming
         """
         Get the largest key in the subtree of the left child of the given node and key. Return the key and the node
         it is in.
