@@ -1,6 +1,8 @@
 import random
+import sys
 from functools import partial
 from typing import Optional
+from loguru import logger
 
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QColor
@@ -333,6 +335,9 @@ class MainWindow(QWidget):
             # Create a new tree with the new order
             self.__tree = BalancedTree(self.__order)
 
+            # logging
+            logger.info(f"The order of the tree is changed to {value}")
+
             # Insert every of the old values into the new tree
             for value in values:
                 try:
@@ -379,9 +384,11 @@ class MainWindow(QWidget):
             # timer.setSingleShot(True)
             # timer.timeout.connect(timerCallback)
             # timer.start()
+            logger.info(f"INSERT: {value}")
 
             self.__tree.insert(int(value))
             self.updateTreeLayout()
+
         except ValueError as e:
             if not bulkInsert:
                 displayUserMessage("inserting value into the tree", e)
@@ -416,6 +423,7 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
+        logger.info(f"DELETE: {value}")
         self.__tree.delete(int(value))
         self.updateTreeLayout()
 
