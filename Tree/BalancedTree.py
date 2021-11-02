@@ -1,5 +1,5 @@
-from .Node import Node
 import config
+from .Node import Node
 
 
 class BalancedTree:

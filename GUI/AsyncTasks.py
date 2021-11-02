@@ -1,8 +1,7 @@
 import random
 from enum import Enum, auto
-from time import sleep
 
-from PyQt6.QtCore import QObject, pyqtSignal, QRunnable, QThread
+from PyQt6.QtCore import pyqtSignal, QThread
 
 
 class WorkerType(Enum):

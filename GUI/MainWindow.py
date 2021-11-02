@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
@@ -24,14 +24,19 @@ class MainWindow(QWidget):
 
         # Variables
         self.__scrollContent = ""
-        self.__order = DEFAULT_ORDER
         self.__animationSpeed = 1
+        self.__currentWorker: Optional[AsyncWorker] = None
+
+        self.__order = DEFAULT_ORDER
         self._tree = BalancedTree(self.__order)
+
         self.__enableAbleButtons: list[QPushButton] = []
         self.__operationWidgets: list[QWidget] = []
+
         self.__graphicalNodes: dict[Node, GraphicalNode] = {}
         self.__searchNode: Optional[GraphicalNode] = None
-        self.__currentWorker: Optional[AsyncWorker] = None
+        self.__searchPath: list[GraphicalNode] = []
+        self.__nodeFound = False
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -149,9 +154,14 @@ class MainWindow(QWidget):
         # Draw every connection
         painter = QPainter(self)
         for node in self.__graphicalNodes.values():
-            if self.__searchNode == node:
-                painter.setPen(QColor(0, 255, 0))
-                painter.drawRect(self.__searchNode.geometry())
+            if node in self.__searchPath:
+                if self.__nodeFound or self.__searchNode is None:
+                    painter.setPen(QColor(0, 255, 0))
+                else:
+                    painter.setPen(QColor(255, 0, 0))
+
+                if node == self.__searchNode:
+                    painter.drawRect(self.__searchNode.geometry())
             else:
                 painter.setPen(QColor(0, 0, 0))
 
@@ -384,7 +394,7 @@ class MainWindow(QWidget):
             self._tree = BalancedTree(self.__order)
 
             # Insert every of the old __values into the new tree
-            self.__runWorker(WorkerType.INSERT, values)
+            self.__runWorker(WorkerType.INSERT, list(values))
 
             # Trigger an update to remove artefacts (old connections)
             self.update()
@@ -422,6 +432,7 @@ class MainWindow(QWidget):
 
         try:
             self._tree.insert(int(value))
+
             self.updateTreeLayout()
         except ValueError as e:
             if not bulkInsert:
@@ -440,11 +451,25 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
+        self.__searchPath = []
         node, key = self._tree.search(int(value))
-        if key:
-            displayUserMessage(f"{value} was found in the node {node}!")
-        else:
-            displayUserMessage(f"{value} couldn't be found! Last searched node: {node}")
+        self.__searchNode = self.__graphicalNodes.get(node)
+        self.__nodeFound = key is not None
+
+        def resetSearch():
+            self.__searchPath = []
+            self.__searchNode = None
+            self.__nodeFound = False
+
+            self.update()
+
+        # Reset after delay
+        QTimer.singleShot(2500, resetSearch)
+
+        # if key:
+        #     displayUserMessage(f"{value} was found in the node {node}!")
+        # else:
+        #     displayUserMessage(f"{value} couldn't be found! Last searched node: {node}")
 
     def __delete(self, value) -> None:
         """
@@ -647,6 +672,4 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__searchNode = self.__graphicalNodes.get(treeNode)
-
-        # TODO: reset search node
+        self.__searchPath.append(self.__graphicalNodes.get(treeNode))
