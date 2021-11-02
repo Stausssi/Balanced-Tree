@@ -2,14 +2,25 @@ from Tree.BalancedTree import BalancedTree
 
 bt = BalancedTree(1)
 
-for key in range(10, 30):
-    bt.insert(key)
-    print(f" ------------- Insert {key} ----------------")
-    print(bt, "\n")
 
-delete = [22, 20]
-for key in delete:
-    print(f"-------------- Delete {key} -----------------")
-    bt.delete(key)
-    print(bt, "\n")
+print(f" ------------- Insert {1} ----------------")
+bt.insert(1)
+print(bt, "\n")
 
+
+print(f" ------------- Insert {2} ----------------")
+bt.insert(2)
+print(bt, "\n")
+
+
+print(f" ------------- Insert {3} ----------------")
+bt.insert(3)
+print(bt, "\n")
+
+print(f"-------------- Delete {2} -----------------")
+bt.delete(2)
+print(bt)
+
+print(f" ------------- Insert {4} ----------------")
+bt.insert(4)
+print(bt, "\n")

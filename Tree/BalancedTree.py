@@ -185,7 +185,9 @@ class BalancedTree:
                 # delete from leaf and rebalance the tree, if an underflow occurred
                 print(f"DELETE KEY FROM LEAF NODE: {target_node}")
                 target_node.deleteKey(found_key)
-                if target_node.isUnderflow():
+
+                # only rebalance the node in an underflow, if it is not a leaf and the root at the same time
+                if target_node.isUnderflow() and not (target_node.isLeaf() and target_node.isRoot()):
                     print(f"LEAF NODE UNDERFLOW: {target_node}")
                     self.__recursive_rebalance(target_node)
             else:
@@ -196,7 +198,7 @@ class BalancedTree:
                 # replace element that should be deleted with the successor_key
                 target_node.replace_key(key, successor_key)
 
-                print(f"REPLACE KEY WITH IN_ORDER_SUCCESSOR({successor_key}) FROM NODE: {successor_node}")
+                print(f"REPLACE KEY WITH IN_ORDER_SUCCESSOR({successor_key}): {target_node}")
 
                 # fix successor node if it had an underflow
                 if successor_node.isUnderflow():
@@ -220,15 +222,13 @@ class BalancedTree:
 
         print(f"NODE {deficient_node} IS DEFICIENET, START REBALANCING")
 
+        # check if either left or right sibling exist and have more than k elements
+        # if so, rotate left/right, and else merge the deficient node with either the left or right sibling
         right_sibling, seperator_key_index_right = deficient_node.get_right_sibling()
         left_sibling, seperator_key_index_left = deficient_node.get_left_sibling()
-
         parent = deficient_node.getParent()
 
-        # check if either left or right sibling exist and have more than k elements
-        # if so, rotate, else merge
-
-        if right_sibling is not None and not right_sibling.has_minimal_elements(): # todo fix --> smaller than ??!!!!
+        if right_sibling is not None and not right_sibling.has_minimal_elements():  # todo fix --> smaller than ??!!!!
             # rotate left
             print(f"ROTATE LEFT: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
             self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
@@ -242,12 +242,12 @@ class BalancedTree:
             # if right sibling exist, merge with right sibling, else merge with left sibling
 
             if right_sibling is not None:
-                #
+                # merge deficient node with right sibling
                 print(f"MERGE DEFICIENT NODE WITH RIGHT SIBLING: DEF{deficient_node}, RIGHT SIBLING{right_sibling}")
                 merged_node = self.__merge_nodes(deficient_node, right_sibling, seperator_key_index_right)
                 print(f"MERGED NODE: {merged_node}")
             else:
-                #
+                # merge deficient node with left sibling
                 print(f"MERGE DEFICIENT NODE WITH LEFT SIBLING: LEFT SIBLING{left_sibling}, DEF{deficient_node}")
                 merged_node = self.__merge_nodes(left_sibling, deficient_node, seperator_key_index_left)
                 print(f"MERGED NODE: {merged_node}")
@@ -256,9 +256,10 @@ class BalancedTree:
             # if parent is the root and now has no elements, make the merged node the new root
             if parent.isRoot() and parent.getKeys() == []:
                 self.root = merged_node
+                merged_node.setParent(None)
                 print("PARENT NODE IS ROOT AND EMPTY --> NEW ROOT")
             elif parent.isUnderflow():
-                # if parent has not enough elements, recursively rebalance the parent
+                # if parent had an underflow, recursively rebalance the parent
                 self.__recursive_rebalance(parent)
 
     def __merge_nodes(self, left_node, right_node, seperator_index) -> Node:
@@ -320,7 +321,8 @@ class BalancedTree:
         right_sibling.deleteKey(first_element_right_sibling)
         parent.replace_key(seperator_key, first_element_right_sibling)
 
-    def __rotate_right(self, deficient_node, left_sibling, seperator_index):
+    @staticmethod
+    def __rotate_right(deficient_node, left_sibling, seperator_index):
         """
 
         Args:
@@ -343,7 +345,8 @@ class BalancedTree:
         left_sibling.deleteKey(last_element_left_sibling)
         parent.replace_key(seperator_key, last_element_left_sibling)
 
-    def __get_in_order_successor(self, node, key):
+    @staticmethod
+    def __get_in_order_successor(node, key):
         """
         Get the largest key in the subtree of the left child of the given node and key. Return the key and the node
         it is in.
@@ -378,12 +381,13 @@ class BalancedTree:
             largest_key = traversing_node.getKeys()[-1]
             traversing_node.deleteKey(largest_key)
 
-            print(f"GET INORDER SUCCESSOR OF {node},{key}: {largest_key}")
+            print(f"GET INORDER SUCCESSOR OF NODE{node},KEY:{key} --> {largest_key}")
 
             # return the biggest key in the leaf node
             return traversing_node, largest_key
 
-    def __get_in_order_predecessor(self, node, key):
+    @staticmethod
+    def __get_in_order_predecessor(node, key):
         """
         Get the smallest key in the subtree of the right child of the given node and key. Return the key and the node
         it is in.
@@ -412,7 +416,7 @@ class BalancedTree:
 
             traversing_node = right_child
 
-            # traverse the tree with the first children of a node until a leaf is reached
+            # traverse the tree with the first children of a node until a leaf is reached --> first is smallest element
             while not traversing_node.isLeaf():
                 traversing_node = traversing_node.getChildren()[0]
 
@@ -454,7 +458,12 @@ class BalancedTree:
 
         return set(values)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """
+
+        Returns:
+
+        """
         out = []
         # Basic list contains the root only
         nodes: list[list[Node]] = [[self.root]]
