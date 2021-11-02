@@ -20,3 +20,13 @@ print(bt)
 print(" ------------- Delete 130 ---------------- delete from internal node, all children minimal number of keys")
 bt.delete(130)
 print(bt)
+
+print(" ------------- Delete 90 ---------------- ")
+bt.delete(90)
+print(bt)
+
+print(" ------------- Delete 1 ---------------- merge ")
+bt.delete(1)
+print(bt)
+
+print("test")
