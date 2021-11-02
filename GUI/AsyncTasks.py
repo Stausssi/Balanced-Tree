@@ -17,21 +17,19 @@ class AsyncWorker(QThread):
     Args:
         mainWindow (MainWindow): The main window widget
         animationSpeed (int): The speed of the animation
-        workerType (WorkerType): The type of the worker
-        values (list[int]): The values to insert/delete. In case of workerType RANGE_INSERT, the first element of the
-            list will be the lowerBorder, the second the upperBorder and the third the count.
+        operations (list[tuple[str, int]]): The values to insert/delete. In case of random insert, this list of tuples
+            consists of "lower", "upper" and "count" with the corresponding values. Otherwise, only "i" and "d" are
+            allowed operations.
     """
 
-    finished = pyqtSignal()
-    error = pyqtSignal(Exception)
+    finished = pyqtSignal(list)
     refresh = pyqtSignal()
 
-    def __init__(self, mainWindow, animationSpeed, workerType, values):
+    def __init__(self, mainWindow, animationSpeed, operations):
         super().__init__(mainWindow)
         self.__tree = mainWindow.getTree()
         self._animationSpeed = animationSpeed
-        self.__workerType = workerType
-        self.__values = values
+        self.__operations = operations
 
     def run(self) -> None:
         """
@@ -41,41 +39,47 @@ class AsyncWorker(QThread):
             None: Nothing
         """
 
-        try:
-            match self.__workerType:
-                case WorkerType.INSERT:
-                    for value in self.__values:
-                        self.__tree.insert(value)
-                        self.refresh.emit()
+        errorList: list[Exception] = []
 
-                        self.msleep(1000 // self._animationSpeed)
-                case WorkerType.DELETE:
-                    for value in self.__values:
-                        self.__tree.delete(value)
-                        self.refresh.emit()
+        # check whether random insert is desired
+        if any([string in [tup[0] for tup in self.__operations] for string in ["lower", "upper", "count"]]):
+            try:
+                lower = int([operation[1] for operation in self.__operations if operation[0] == "lower"][0])
+                upper = int([operation[1] for operation in self.__operations if operation[0] == "upper"][0])
+                count = int([operation[1] for operation in self.__operations if operation[0] == "count"][0])
 
-                        self.msleep(1000 // self._animationSpeed)
-                case WorkerType.RANGE_INSERT:
+                while count > 0:
                     try:
-                        lower = self.__values[0]
-                        upper = self.__values[1]
-                        count = self.__values[2]
-                    except IndexError as e:
-                        print(e)
-                        self.finished.emit()
-                        return
-
-                    while count > 0:
                         self.__tree.insert(random.randint(lower, upper))
 
                         self.refresh.emit()
                         self.msleep(1000 // self._animationSpeed)
 
                         count -= 1
-        except ValueError as e:
-            self.error.emit(e)
+                    except ValueError:
+                        # Ignore errors
+                        pass
+            except IndexError as e:
+                errorList.append(e)
+        else:
+            # Otherwise, go through operations and perform the operation
+            for operation, value in self.__operations:
+                try:
+                    match operation.lower():
+                        case "i":
+                            self.__tree.insert(value)
+                        case "d":
+                            self.__tree.delete(value)
+                        case _:
+                            raise ValueError(f"Unknown operation '{operation}'!")
 
-        self.finished.emit()
+                    self.refresh.emit()
+                    self.msleep(1000 // self._animationSpeed)
+                except Exception as e:
+                    errorList.append(e)
+
+        # Return the errors
+        self.finished.emit(errorList)
 
     def updateAnimationSpeed(self, newSpeed) -> None:
         """

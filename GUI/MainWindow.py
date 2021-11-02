@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
 from util import readCSV
-from .AsyncTasks import WorkerType, AsyncWorker
+from .AsyncTasks import AsyncWorker
 from .Dialogs import DialogType, ConfirmationDialog
 from .GraphicalNode import GraphicalNode
 from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
@@ -326,19 +326,28 @@ class MainWindow(QWidget):
             for button in self.__enableAbleButtons:
                 button.setEnabled(not self._tree.isEmpty())
 
-    def __runWorker(self, workerType, values) -> None:
+    def __runWorker(self, operations) -> None:
         """
         This method creates a separate worker thread.
 
         Args:
-            workerType (WorkerType): The type of the worker
-            values (list[int]): The values to manipulate
+            operations (list[tuple[str, int]]): The operations the worker should perform.
 
         Returns:
             None: Nothing
         """
 
-        def finishedProcedure():
+        def finishedProcedure(errorList):
+            """
+            This method is called after the worker finished. It will reset used variables.
+
+            Args:
+                errorList (list[Exception]): The errors that occurred during the operations
+
+            Returns:
+                None: Nothing
+            """
+
             # Reset the worker
             self.__currentWorker = None
 
@@ -348,23 +357,35 @@ class MainWindow(QWidget):
 
             self.__updateEnableAbleButtons()
 
+            # Anzeigen der Fehlermeldungen (falls vorhanden)
+            if len(errorList) > 0:
+                def resetScrollContent():
+                    """
+                    This method resets the scroll content string
+                    """
+
+                    self.__scrollContent = ""
+
+                self.__scrollContent = "\n".join([str(e) for e in errorList])
+                self.__showDialog(
+                    "Die nachfolgenden Fehler sind bei der Bearbeitung aufgetreten:",
+                    resetScrollContent,
+                    DialogType.SCROLL_CONTENT
+                )
+
         # Disable the operations and enable-able buttons
         for widget in self.__operationWidgets + self.__enableAbleButtons:
             widget.setEnabled(False)
 
         # Create a new worker
-        worker = AsyncWorker(self, self.__animationSpeed, workerType, values)
+        worker = AsyncWorker(self, self.__animationSpeed, operations)
 
         # Update the layout on the event
         worker.refresh.connect(self.updateTreeLayout)
 
-        # Print the error TODO: handle
-        worker.error.connect(lambda ex: print(ex))
-        worker.error.connect(worker.deleteLater)
-
         # Enable the window again on finish
         worker.finished.connect(finishedProcedure)
-        worker.finished.connect(worker.deleteLater)
+        # worker.finished.connect(worker.deleteLater)
 
         # Start
         worker.start()
@@ -393,8 +414,8 @@ class MainWindow(QWidget):
             # Create a new tree with the new order
             self._tree = BalancedTree(self.__order)
 
-            # Insert every of the old __values into the new tree
-            self.__runWorker(WorkerType.INSERT, list(values))
+            # Insert each old value into the new tree
+            self.__runWorker([("i", value) for value in values])
 
             # Trigger an update to remove artefacts (old connections)
             self.update()
@@ -415,13 +436,12 @@ class MainWindow(QWidget):
         if self.__currentWorker is not None:
             self.__currentWorker.updateAnimationSpeed(int(value))
 
-    def insert(self, value, bulkInsert=False) -> None:
+    def insert(self, value) -> None:
         """
         This method is used to insert a value into the tree. It is used as a dialog-callback.
 
         Args:
             value (int): The new value
-            bulkInsert (bool): Whether a bulk of values is being inserted. This is true, if a CSV is imported.
 
         Returns:
             None: Nothing
@@ -435,10 +455,7 @@ class MainWindow(QWidget):
 
             self.updateTreeLayout()
         except ValueError as e:
-            if not bulkInsert:
-                displayUserMessage("inserting value into the tree", e)
-            else:
-                raise e
+            displayUserMessage("inserting value into the tree", e)
 
     def __search(self, value) -> None:
         """
@@ -499,7 +516,9 @@ class MainWindow(QWidget):
             self.__scrollContent = readCSV(path)
 
             self.__showDialog(
-                "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.SCROLL_CONTENT,
+                "Hier eine Übersicht über die Einträge der Datei:",
+                self.__importCSVContents,
+                DialogType.SCROLL_CONTENT,
                 True
             )
         except FileNotFoundError as e:
@@ -515,57 +534,55 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        invalidLines: dict[int, str] = {}
-        lineCount = 1
+        # Get the valid operations of the CSV file
+        operations = [
+            (operation, int(value[0]))
+            for operation, *value in [
+                line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")
+            ]
+            if operation.lower() in ["i", "d"] and len(value) == 1 and value[0].isdigit()
+        ]
 
-        # Create a list of lists containing the operation as the first element and the value as the second
-        for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
-            # Check whether the value is singular
-            if len(value) == 1:
-                value = value[0]
+        self.__runWorker(operations)
 
-                # Match the operation
-                match operation.lower():
-                    case "i":
-                        try:
-                            # Insert the value
-                            self.insert(value, True)
-                        except ValueError as e:
-                            # Add line to invalid lines
-                            invalidLines.update({
-                                lineCount: str(e)
-                            })
-                    case "d":
-                        try:
-                            # Delete the value
-                            print(operation, "delete value", value)
-                        except ValueError as e:
-                            # Add line to invalid lines
-                            invalidLines.update({
-                                lineCount: str(e)
-                            })
-                    case _:
-                        # Add line to invalid lines
-                        invalidLines.update({
-                            lineCount: f"Invalid operation '{operation}'!"
-                        })
-            else:
-                # Add line to invalid lines
-                invalidLines.update({
-                    lineCount: f"Invalid number of entries ({len(value)})!"
-                })
+        print("operations:", operations)
 
-            lineCount += 1
-
-        if len(invalidLines) > 0:
-            self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
-
-            self.__showDialog(
-                "The following lines contain mistakes and couldn't be added",
-                print,
-                DialogType.SCROLL_CONTENT,
-                False
-            )
+        # invalidLines: dict[int, str] = {}
+        # lineCount = 1
+        #
+        # # Create a list of lists containing the operation as the first element and the value as the second
+        # for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
+        #     # Check whether the value is singular
+        #     if len(value) == 1:
+        #         value = value[0]
+        #         operation = operation.lower()
+        #
+        #         # Match the operation
+        #         match operation:
+        #             case "i" | "d":
+        #                 operations.append((operation, value))
+        #             case _:
+        #                 # Add line to invalid lines
+        #                 invalidLines.update({
+        #                     lineCount: f"Invalid operation '{operation}'!"
+        #                 })
+        #     else:
+        #         # Add line to invalid lines
+        #         invalidLines.update({
+        #             lineCount: f"Invalid number of entries ({len(value)})!"
+        #         })
+        #
+        #     lineCount += 1
+        #
+        # if len(invalidLines) > 0:
+        #     self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
+        #
+        #     self.__showDialog(
+        #         "The following lines contain mistakes and couldn't be added",
+        #         print,
+        #         DialogType.SCROLL_CONTENT,
+        #         False
+        #     )
 
         # Reset scroll content
         self.__scrollContent = ""
@@ -626,7 +643,7 @@ class MainWindow(QWidget):
                     )
                 )
             else:
-                self.__runWorker(WorkerType.RANGE_INSERT, [lowerBorder, upperBorder, count])
+                self.__runWorker([("lower", lowerBorder), ("upper", upperBorder), ("count", count)])
 
     def __reset(self) -> None:
         """
