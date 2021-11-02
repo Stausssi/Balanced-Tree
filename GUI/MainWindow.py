@@ -1,14 +1,16 @@
 import random
 from functools import partial
+from time import sleep
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QRunnable, QThreadPool, QThread, QObject
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
 from util import readCSV
+from .AsyncTasks import AsyncRangeInsert
 from .Dialogs import DialogType, ConfirmationDialog
 from .GraphicalNode import GraphicalNode
 from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
@@ -191,7 +193,7 @@ class MainWindow(QWidget):
             partial(
                 self.__showDialog,
                 "Welchen Eintrag möchtest du hinzufügen?",
-                self.__insert,
+                self.insert,
                 DialogType.INSERT
             )
         )
@@ -336,7 +338,7 @@ class MainWindow(QWidget):
             # Insert every of the old values into the new tree
             for value in values:
                 try:
-                    self.__insert(value, True)
+                    self.insert(value, True)
                 except ValueError as e:
                     print(e)
 
@@ -358,7 +360,7 @@ class MainWindow(QWidget):
 
         self.__animationSpeed = value
 
-    def __insert(self, value, bulkInsert=False) -> None:
+    def insert(self, value, bulkInsert=False) -> None:
         """
         This method is used to insert a value into the tree. It is used as a dialog-callback.
 
@@ -379,7 +381,7 @@ class MainWindow(QWidget):
             # timer.setSingleShot(True)
             # timer.timeout.connect(timerCallback)
             # timer.start()
-
+            print("inserting ", value)
             self.__tree.insert(int(value))
             self.updateTreeLayout()
         except ValueError as e:
@@ -463,7 +465,7 @@ class MainWindow(QWidget):
                     case "i":
                         try:
                             # Insert the value
-                            self.__insert(value, True)
+                            self.insert(value, True)
                         except ValueError as e:
                             # Add line to invalid lines
                             invalidLines.update({
@@ -560,12 +562,12 @@ class MainWindow(QWidget):
                     )
                 )
             else:
-                while count > 0:
-                    try:
-                        self.__insert(random.randint(lowerBorder, upperBorder), True)
-                        count -= 1
-                    except ValueError:
-                        pass
+                # TODO: exception handling
+                self.setEnabled(False)
+                thread = AsyncRangeInsert(self, self.__animationSpeed, count, lowerBorder, upperBorder)
+                thread.insert.connect(lambda value: self.insert(value, True))
+                thread.finished.connect(partial(self.setEnabled, True))
+                thread.start()
 
     def __reset(self) -> None:
         """
