@@ -1,4 +1,3 @@
-import random
 from functools import partial
 from typing import Optional
 
@@ -9,6 +8,7 @@ from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
 from util import readCSV
+from .AsyncTasks import AsyncWorker
 from .Dialogs import DialogType, ConfirmationDialog
 from .GraphicalNode import GraphicalNode
 from .util import createHorizontalLayout, createVerticalLayout, displayUserMessage, clearLayout
@@ -24,12 +24,19 @@ class MainWindow(QWidget):
 
         # Variables
         self.__scrollContent = ""
-        self.__order = DEFAULT_ORDER
         self.__animationSpeed = 1
-        self.__tree = BalancedTree(self.__order)
+        self.__currentWorker: Optional[AsyncWorker] = None
+
+        self.__order = DEFAULT_ORDER
+        self._tree = BalancedTree(self.__order)
+
         self.__enableAbleButtons: list[QPushButton] = []
+        self.__operationWidgets: list[QWidget] = []
+
         self.__graphicalNodes: dict[Node, GraphicalNode] = {}
         self.__searchNode: Optional[GraphicalNode] = None
+        self.__searchPath: list[GraphicalNode] = []
+        self.__nodeFound = False
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -40,12 +47,12 @@ class MainWindow(QWidget):
 
         self.setLayout(createVerticalLayout([self.__treeLayout, self.__createFooter()]))
 
-        self.updateTreeLayout()
+        self.__updateTreeLayout()
 
         # Show this window
         self.show()
 
-    def updateTreeLayout(self) -> None:
+    def __updateTreeLayout(self) -> None:
         """
         This method updates the tree layout to show the given tree. Calling this function can be used to animate the
         tree.
@@ -55,7 +62,7 @@ class MainWindow(QWidget):
         """
 
         # Basic list contains the root only
-        nodes: list[list[Node]] = [[self.__tree.root]]
+        nodes: list[list[Node]] = [[self._tree.root]]
         layer = 1
 
         # Clear every item out of the layout
@@ -66,7 +73,7 @@ class MainWindow(QWidget):
 
         # This dict contains the parentInformation reference (QFrame) of every node
         references: dict[Node, tuple[QFrame, GraphicalNode]] = {
-            self.__tree.root: (None, None)
+            self._tree.root: (None, None)
         }
 
         # Construct the layout
@@ -130,6 +137,7 @@ class MainWindow(QWidget):
 
         # print("\n\n")
         self.__updateEnableAbleButtons()
+        self.update()
 
     def paintEvent(self, _) -> None:
         """
@@ -146,9 +154,14 @@ class MainWindow(QWidget):
         # Draw every connection
         painter = QPainter(self)
         for node in self.__graphicalNodes.values():
-            if self.__searchNode == node:
-                painter.setPen(QColor(0, 255, 0))
-                painter.drawRect(self.__searchNode.geometry())
+            if node in self.__searchPath:
+                if self.__nodeFound or self.__searchNode is None:
+                    painter.setPen(QColor(0, 255, 0))
+                else:
+                    painter.setPen(QColor(255, 0, 0))
+
+                if node == self.__searchNode:
+                    painter.drawRect(self.__searchNode.geometry())
             else:
                 painter.setPen(QColor(0, 0, 0))
 
@@ -191,7 +204,7 @@ class MainWindow(QWidget):
             partial(
                 self.__showDialog,
                 "Welchen Eintrag möchtest du hinzufügen?",
-                self.__insert,
+                self.insert,
                 DialogType.INSERT
             )
         )
@@ -250,6 +263,7 @@ class MainWindow(QWidget):
 
         # Save buttons which can be disabled to list
         self.__enableAbleButtons = [button_find, button_delete, button_reset]
+        self.__operationWidgets = [orderInput, button_insert, button_csv, button_autofill]
 
         # Combine the layouts
         configLayout = createHorizontalLayout([orderLayout, sliderLayout])
@@ -308,8 +322,71 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        for button in self.__enableAbleButtons:
-            button.setEnabled(not self.__tree.isEmpty())
+        if self.__currentWorker is None:
+            for button in self.__enableAbleButtons:
+                button.setEnabled(not self._tree.isEmpty())
+
+    def __runWorker(self, operations) -> None:
+        """
+        This method creates a separate worker thread.
+
+        Args:
+            operations (list[tuple[str, int]]): The operations the worker should perform.
+
+        Returns:
+            None: Nothing
+        """
+
+        def finishedProcedure(errorList) -> None:
+            """
+            This method is called after the worker finished. It will reset used variables.
+
+            Args:
+                errorList (list[Exception]): The errors that occurred during the operations
+            """
+
+            # Reset the worker
+            self.__currentWorker = None
+
+            # Enable the widgets
+            for w in self.__operationWidgets:
+                w.setEnabled(True)
+
+            self.__updateEnableAbleButtons()
+
+            # Anzeigen der Fehlermeldungen (falls vorhanden)
+            if len(errorList) > 0:
+                def resetScrollContent() -> None:
+                    """
+                    This method resets the scroll content string
+                    """
+                    self.__scrollContent = ""
+
+                self.__scrollContent = "\n".join([str(e) for e in errorList])
+                self.__showDialog(
+                    "Die nachfolgenden Fehler sind bei der Bearbeitung aufgetreten:",
+                    resetScrollContent,
+                    DialogType.SCROLL_CONTENT
+                )
+
+        # Disable the operations and enable-able buttons
+        for widget in self.__operationWidgets + self.__enableAbleButtons:
+            widget.setEnabled(False)
+
+        # Create a new worker
+        worker = AsyncWorker(self, self.__animationSpeed, operations)
+
+        # Update the layout on the signal
+        worker.refresh.connect(self.__updateTreeLayout)
+
+        # Enable the window again on finish
+        worker.finished.connect(finishedProcedure)
+        # worker.finished.connect(worker.deleteLater)
+
+        # Start
+        worker.start()
+
+        self.__currentWorker = worker
 
     # ---------- [Callback methods] ---------- #
 
@@ -328,21 +405,15 @@ class MainWindow(QWidget):
             self.__order = int(value)
 
             # Get the current values of the tree
-            values = self.__tree.getAllValues()
+            values = self._tree.getAllValues()
 
             # Create a new tree with the new order
-            self.__tree = BalancedTree(self.__order)
+            self._tree = BalancedTree(self.__order)
 
-            # Insert every of the old values into the new tree
-            for value in values:
-                try:
-                    self.__insert(value, True)
-                except ValueError as e:
-                    print(e)
+            # Insert each old value into the new tree
+            self.__runWorker([("i", value) for value in values])
 
             # Trigger an update to remove artefacts (old connections)
-            # TODO: Also update the window size -> This will also update the window size, if the user resized the window
-            #  --> Therefore, don't reset the window size
             self.update()
 
     def __updateAnimationSpeed(self, value) -> None:
@@ -356,15 +427,17 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__animationSpeed = value
+        self.__animationSpeed = int(value)
 
-    def __insert(self, value, bulkInsert=False) -> None:
+        if self.__currentWorker is not None:
+            self.__currentWorker.updateAnimationSpeed(int(value))
+
+    def insert(self, value) -> None:
         """
         This method is used to insert a value into the tree. It is used as a dialog-callback.
 
         Args:
             value (int): The new value
-            bulkInsert (bool): Whether a bulk of values is being inserted. This is true, if a CSV is imported.
 
         Returns:
             None: Nothing
@@ -374,19 +447,11 @@ class MainWindow(QWidget):
         """
 
         try:
-            # timer = QTimer(self)
-            # timer.setInterval(1000 // self.__animationSpeed)
-            # timer.setSingleShot(True)
-            # timer.timeout.connect(timerCallback)
-            # timer.start()
+            self._tree.insert(int(value))
 
-            self.__tree.insert(int(value))
-            self.updateTreeLayout()
+            self.__updateTreeLayout()
         except ValueError as e:
-            if not bulkInsert:
-                displayUserMessage("inserting value into the tree", e)
-            else:
-                raise e
+            displayUserMessage("inserting value into the tree", e)
 
     def __search(self, value) -> None:
         """
@@ -399,11 +464,25 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        node, key = self.__tree.search(int(value))
-        if key:
-            displayUserMessage(f"{value} was found in the node {node}!")
-        else:
-            displayUserMessage(f"{value} couldn't be found! Last searched node: {node}")
+        self.__searchPath = []
+        node, key = self._tree.search(int(value))
+        self.__searchNode = self.__graphicalNodes.get(node)
+        self.__nodeFound = key is not None
+
+        def resetSearch():
+            self.__searchPath = []
+            self.__searchNode = None
+            self.__nodeFound = False
+
+            self.update()
+
+        # Reset after delay
+        QTimer.singleShot(2500, resetSearch)
+
+        # if key:
+        #     displayUserMessage(f"{value} was found in the node {node}!")
+        # else:
+        #     displayUserMessage(f"{value} couldn't be found! Last searched node: {node}")
 
     def __delete(self, value) -> None:
         """
@@ -418,6 +497,7 @@ class MainWindow(QWidget):
 
         self.__tree.delete(int(value))
         self.updateTreeLayout()
+
 
     def __showCSVContents(self, path) -> None:
         """
@@ -434,7 +514,9 @@ class MainWindow(QWidget):
             self.__scrollContent = readCSV(path)
 
             self.__showDialog(
-                "Hier eine Übersicht über die Einträge der Datei:", self.__importCSVContents, DialogType.SCROLL_CONTENT,
+                "Hier eine Übersicht über die Einträge der Datei:",
+                self.__importCSVContents,
+                DialogType.SCROLL_CONTENT,
                 True
             )
         except FileNotFoundError as e:
@@ -450,60 +532,58 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        invalidLines: dict[int, str] = {}
-        lineCount = 1
+        # Get the valid operations of the CSV file
+        operations = [
+            (operation, int(value[0]))
+            for operation, *value in [
+                line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")
+            ]
+            if operation.lower() in ["i", "d"] and len(value) == 1 and value[0].isdigit()
+        ]
 
-        # Create a list of lists containing the operation as the first element and the value as the second
-        for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
-            # Check whether the value is singular
-            if len(value) == 1:
-                value = value[0]
+        # Start the async task
+        self.__runWorker(operations)
 
-                # Match the operation
-                match operation.lower():
-                    case "i":
-                        try:
-                            # Insert the value
-                            self.__insert(value, True)
-                        except ValueError as e:
-                            # Add line to invalid lines
-                            invalidLines.update({
-                                lineCount: str(e)
-                            })
-                    case "d":
-                        try:
-                            # Delete the value
-                            print(operation, "delete value", value)
-                        except ValueError as e:
-                            # Add line to invalid lines
-                            invalidLines.update({
-                                lineCount: str(e)
-                            })
-                    case _:
-                        # Add line to invalid lines
-                        invalidLines.update({
-                            lineCount: f"Invalid operation '{operation}'!"
-                        })
-            else:
-                # Add line to invalid lines
-                invalidLines.update({
-                    lineCount: f"Invalid number of entries ({len(value)})!"
-                })
-
-            lineCount += 1
-
-        if len(invalidLines) > 0:
-            self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
-
-            self.__showDialog(
-                "The following lines contain mistakes and couldn't be added",
-                print,
-                DialogType.SCROLL_CONTENT,
-                False
-            )
-
-        # Reset scroll content
-        self.__scrollContent = ""
+        # TODO: invalid lines would be nice!
+        # invalidLines: dict[int, str] = {}
+        # lineCount = 1
+        #
+        # # Create a list of lists containing the operation as the first element and the value as the second
+        # for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
+        #     # Check whether the value is singular
+        #     if len(value) == 1:
+        #         value = value[0]
+        #         operation = operation.lower()
+        #
+        #         # Match the operation
+        #         match operation:
+        #             case "i" | "d":
+        #                 operations.append((operation, value))
+        #             case _:
+        #                 # Add line to invalid lines
+        #                 invalidLines.update({
+        #                     lineCount: f"Invalid operation '{operation}'!"
+        #                 })
+        #     else:
+        #         # Add line to invalid lines
+        #         invalidLines.update({
+        #             lineCount: f"Invalid number of entries ({len(value)})!"
+        #         })
+        #
+        #     lineCount += 1
+        #
+        # if len(invalidLines) > 0:
+        #     self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
+        #
+        #     self.__showDialog(
+        #         "The following lines contain mistakes and couldn't be added",
+        #         print,
+        #         DialogType.SCROLL_CONTENT,
+        #         False
+        #     )
+        #
+        # # Reset scroll content
+        # self.__scrollContent = ""
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """
@@ -542,12 +622,11 @@ class MainWindow(QWidget):
             # Get the existing keys
             existing_keys = [
                 found for _, found in [
-                    self.__tree.search(i) for i in range(lowerBorder, upperBorder + 1)
+                    self._tree.search(i) for i in range(lowerBorder, upperBorder + 1)
                 ]
                 if found
             ]
 
-            # print(f"existing keys in the range [{lowerBorder}, {upperBorder}]: {existing_keys}")
             # Remove existing keys from availableRange
             availableRange -= len(existing_keys)
 
@@ -556,17 +635,13 @@ class MainWindow(QWidget):
                 displayUserMessage(
                     "parsing user input",
                     ValueError(
-                        f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}], since {existing_keys} "
-                        f"exist already!"
+                        f"Can't fit {count} values in the range [{lowerBorder}, {upperBorder}], since {existing_keys}"
+                        f" exist already!"
                     )
                 )
             else:
-                while count > 0:
-                    try:
-                        self.__insert(random.randint(lowerBorder, upperBorder), True)
-                        count -= 1
-                    except ValueError:
-                        pass
+                # Start the worker
+                self.__runWorker([("lower", lowerBorder), ("upper", upperBorder), ("count", count)])
 
     def __reset(self) -> None:
         """
@@ -576,8 +651,8 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__tree = BalancedTree(self.__order)
-        self.updateTreeLayout()
+        self._tree = BalancedTree(self.__order)
+        self.__updateTreeLayout()
 
     # ---------- [Public methods] ---------- #
 
@@ -591,17 +666,26 @@ class MainWindow(QWidget):
 
         return self.__scrollContent
 
-    def animateSearch(self, treeNode) -> None:
+    def getTree(self) -> BalancedTree:
         """
-        This method returns the corresponding graphical node of the given tree node.
+        This method returns the tree of the window.
+
+        Returns:
+            BalancedTree: The balanced Tree
+        """
+
+        return self._tree
+
+    def addNoteToPath(self, treeNode) -> None:
+        """
+        This method appends the graphical node of the given treeNode to a list of GraphicalNodes representing the path
+        the search took.
 
         Args:
-            treeNode (Node): The node to animate
+            treeNode (Node): The node to animate to add to the path.
 
         Returns:
             None: Nothing
         """
 
-        self.__searchNode = self.__graphicalNodes.get(treeNode)
-
-        # TODO: reset search node
+        self.__searchPath.append(self.__graphicalNodes.get(treeNode))
