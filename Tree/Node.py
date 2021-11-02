@@ -242,7 +242,7 @@ class Node:
         Returns:
 
         """
-        return len(self.keys) == self.k
+        return len(self.keys) <= self.k
 
     def insert_key_sorted(self, insert_key) -> int:
         """

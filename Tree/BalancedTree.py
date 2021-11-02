@@ -98,7 +98,7 @@ class BalancedTree:
 
         """
 
-        config.mainWindow.animateSearch(node)
+        # config.mainWindow.animateSearch(node)
 
         if node.hasKey(key_to_search):
             # the key is returned, data could also be returned
@@ -189,13 +189,13 @@ class BalancedTree:
                 # target_node is an internal node
 
                 # pop largest element in left subtree of target_node
-                predecessor_node, predecessor_key = self.__get_in_order_predecessor(target_node, key)
-                # replace element that should be deleted with the predecessor_key
-                target_node.replace_key(key, predecessor_key)
+                successor_node, successor_key = self.__get_in_order_successor(target_node, key)
+                # replace element that should be deleted with the successor_key
+                target_node.replace_key(key, successor_key)
 
-                # fix predecessor node if it had an underflow
-                if predecessor_node.isUnderflow():
-                    self.__recursive_rebalance(predecessor_node)
+                # fix successor node if it had an underflow
+                if successor_node.isUnderflow():
+                    self.__recursive_rebalance(successor_node)
         else:
             # key wasn´t found in tree
             raise ValueError(f"{found_key} is not in the tree.")
@@ -220,7 +220,7 @@ class BalancedTree:
         # check if either left or right sibling exist and have more than k elements
         # if so, rotate, else merge
 
-        if right_sibling is not None and not right_sibling.has_minimal_elements():
+        if right_sibling is not None and not right_sibling.has_minimal_elements(): # fix --> smaller than ??!!!!
             # rotate left
             self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
         elif left_sibling is not None and not left_sibling.has_minimal_elements():
@@ -268,11 +268,15 @@ class BalancedTree:
         children.extend(right_node.getChildren())
         merged_node = Node(self.k, keys=keys, children=children, parent=parent)
 
+        # reset parent of children to new node
+        for child in children:
+            child.setParent(merged_node)
+
         # remove seperator from parent
         parent.deleteKey(seperator)
-        # remove child before seperator and replace reference to child after seperator with new node
-        parent.deleteChild(left_node)
-        parent.setChildren(merged_node, seperator_index + 1)
+        # remove child after seperator and replace reference to child before seperator with new node
+        parent.deleteChild(right_node)
+        parent.setChildren(merged_node, seperator_index)
 
         return merged_node
 
@@ -322,7 +326,7 @@ class BalancedTree:
         left_sibling.deleteKey(last_element_left_sibling)
         parent.replace_key(seperator_key, last_element_left_sibling)
 
-    def __get_in_order_predecessor(self, node, key):
+    def __get_in_order_successor(self, node, key):
         """
         Get the largest key in the subtree of the left child of the given node and key. Return the key and the node
         it is in.
@@ -338,13 +342,19 @@ class BalancedTree:
         if not node.hasKey(key):
             return ValueError(f"Node does not contain {key}")
         elif node.isLeaf():
-            return ValueError("Node is a leaf and does not have a in order predecessor")
+            return ValueError("Node is a leaf and does not have a in order successor")
         else:
-            left_child = node.getChildren()[node.getKeys().index(key) + 1]
+            # get reference to child on the left of "key" --> index equal to key as seen below
+            # node.keys:               [1,   3,   7,   8]
+            # correspondences:         /    /    /    /
+            # node.children:         [R1,  R2,  R3,  R4,  R5]
+            #                              ^     ^
+            #             left child of key|     | current "key"
+            left_child = node.getChildren()[node.getKeys().index(key)]
 
             traversing_node = left_child
 
-            # traverse the tree with the last children of the node until a leaf is reached
+            # traverse the tree with the right most reference of the node until a leaf is reached
             while not traversing_node.isLeaf():
                 traversing_node = traversing_node.getChildren()[-1]
 
@@ -354,7 +364,7 @@ class BalancedTree:
             # return the biggest key in the leaf node
             return traversing_node, largest_key
 
-    def __get_in_order_successor(self, node, key):
+    def __get_in_order_predecessor(self, node, key):
         """
         Get the smallest key in the subtree of the right child of the given node and key. Return the key and the node
         it is in.
@@ -370,9 +380,16 @@ class BalancedTree:
         if not node.hasKey(key):
             return ValueError(f"Node does not contain {key}")
         elif node.isLeaf():
-            return ValueError("Node is a leaf and does not have a in order successor")
+            return ValueError("Node is a leaf and does not have a in order predecessor")
         else:
-            right_child = node.getChildren()[node.getKeys().index(key)]
+            # get reference to child on the right of "key" --> index equal to index of key + 1 as seen below:
+            # node.keys:               [1,   3,   7,   8]
+            # correspondences:         /    /    /    /
+            # node.children:         [R1,  R2,  R3,  R4,  R5]
+            #                                   ^     ^
+            #                      current "key"|     | right child of key
+
+            right_child = node.getChildren()[node.getKeys().index(key) + 1]
 
             traversing_node = right_child
 
