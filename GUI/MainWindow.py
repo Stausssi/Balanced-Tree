@@ -208,7 +208,7 @@ class MainWindow(QWidget):
             partial(
                 self.__showDialog,
                 "Welchen Eintrag möchtest du hinzufügen?",
-                self.insert,
+                self.__insert,
                 DialogType.INSERT
             )
         )
@@ -439,7 +439,7 @@ class MainWindow(QWidget):
         if self.__currentWorker is not None:
             self.__currentWorker.updateAnimationSpeed(int(value))
 
-    def insert(self, value) -> None:
+    def __insert(self, value) -> None:
         """
         This method is used to insert a value into the tree. It is used as a dialog-callback.
 
