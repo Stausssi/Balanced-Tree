@@ -217,17 +217,12 @@ class BalancedTree:
             3. The tree is now balanced
 
         • Otherwise, if both immediate siblings have only the minimum number of elements, then merge with a
-        sibling sandwiching their separator taken off from their parent
-            1. Copy the separator to the end of the left node (the left node may be the deficient node or it may be
-            the sibling with the minimum number of elements)
-            2. Move all elements from the right node to the left node (the left node now has the maximum number
-            of elements, and the right node – empty)
-            3. Remove the separator from the parent along with its empty right child (the parent loses an element)
+            sibling sandwiching their separator taken off from their parent
 
         • If the parent is the root and now has no elements, then free it and make the merged node the
-        new root (tree becomes shallower)
-        • Otherwise, if the parent has fewer than the required number of elements, then rebalance the
-        parent
+            new root (tree becomes shallower)
+
+        • Otherwise, if the parent has fewer than the required number of elements, then rebalance theparent
 
         Args:
             deficient_node(Node): The node, that has less than k keys and should be rebalanced.
@@ -303,15 +298,16 @@ class BalancedTree:
         3. Remove the separator from the parent along with its empty right child (the parent loses an element)
 
         Args:
-            left_node (Node):
-            right_node (Node):
-            seperator_index (int):
+            left_node (Node): Node on the left
+            right_node (Node): Node on the right
+            seperator_index (int): Index of key in parent, that logically seperates left_node and right_node
 
         Returns:
-            Node:
+            Node: The merged node
 
         """
 
+        # add seperator key in parent to the left node
         parent = left_node.getParent()
         seperator = parent.getKeys()[seperator_index]
         left_node.addKeyAndChild(seperator)
@@ -323,30 +319,36 @@ class BalancedTree:
         children.extend(right_node.getChildren())
         merged_node = Node(self.k, keys=keys, children=children, parent=parent)
 
-        # reset parent of children to new node
+        # reset parent of new nodes children to the merged_node
         for child in children:
             child.setParent(merged_node)
 
         # remove seperator from parent
         parent.deleteKey(seperator)
-        # remove child after seperator and replace reference to child before seperator with new node
+        # remove child after seperator in parent and replace reference to child before seperator with new node
         parent.deleteChild(right_node)
         parent.setChild(merged_node, seperator_index)
 
         return merged_node
 
     @staticmethod
-    def __rotate_left(deficient_node, right_sibling, seperator_index):
+    def __rotate_left(deficient_node, right_sibling, seperator_index) -> None:
         """
+        Rotate an element from right_sibling to parent and from parent to deficient_node, so that deficient node has
+        k elements. When deficient_node and right_sibling are internal nodes, also transfer the first child of
+        right_sibling to the deficient_node.
 
         Args:
-            deficient_node(Node):
-            right_sibling(Node):
-            seperator_index(int):
+            deficient_node (Node): The Node that receives a key during the rotation
+            right_sibling (Node): The node that gives a key, must have more than k elements and is on the right of
+                                    deficient_node
+            seperator_index (int): The index of the key, that logically separates deficient_node and right_sibling
 
         Returns:
+            None: Nothing
 
         """
+
         parent = deficient_node.getParent()
 
         # insert seperator at the end of deficient node
@@ -368,15 +370,21 @@ class BalancedTree:
     @staticmethod
     def __rotate_right(deficient_node, left_sibling, seperator_index):
         """
+        Rotate an element from left_sibling to parent and from parent to deficient_node, so that deficient node has
+        k elements. When deficient_node and right_sibling are internal nodes, also transfer the last child of
+        left_sibling to the deficient_node.
 
         Args:
-            deficient_node(Node):
-            left_sibling(Node):
-            seperator_index(int):
+            deficient_node (Node): The Node that receives a key during the rotation
+            left_sibling (Node): The node that gives a key, must have more than k elements and is on the left of
+                                    deficient_node
+            seperator_index (int): The index of the key, that logically separates deficient_node and right_sibling
 
         Returns:
+            None: Nothing
 
         """
+
         parent = deficient_node.getParent()
 
         # insert seperator at the start of deficient node
@@ -397,41 +405,42 @@ class BalancedTree:
         parent.replace_key(seperator_key, last_key_left_sibling)
 
     @staticmethod
-    def __get_in_order_successor(node, key):  # todo: naming
+    def __get_in_order_successor(node, key) -> Tuple[Node, int]:
         """
-        Get the largest key in the subtree of the left child of the given node and key. Return the key and the node
-        it is in.
+        Get the largest key in the subtree of the child that is on the left of the key in the node.
+        Return the largest key and the node it is in.
 
         Args:
-            node:
-            key:
+            node (Node): The node where "key" is in
+            key (int): The key, whose in order successor should be found.
 
         Returns:
+            Tuple[Node, int]: The largest key and the node it is in.
 
         """
 
         if not node.hasKey(key):
-            return ValueError(f"Node does not contain {key}")
+            raise ValueError(f"Node does not contain {key}")
         elif node.isLeaf():
-            return ValueError("Node is a leaf and does not have a in order successor")
+            raise ValueError("Node is a leaf and does not have a in order successor")
         else:
             # get reference to child on the left of "key" --> index equal to key as seen below
             # node.keys:               [1,   3,   7,   8]
             # correspondences:         /    /    /    /
             # node.children:         [R1,  R2,  R3,  R4,  R5]
             #                              ^     ^
-            #             left child of key|     | current "key"
+            #             left child of key|     | current "key" (7)
 
             left_child = node.getChildren()[node.getKeys().index(key)]
 
             traversing_node = left_child
 
-            # traverse the tree with the right most reference of the node until a leaf is reached
+            # traverse the tree with the first reference of the node until a leaf is reached
             while not traversing_node.isLeaf():
                 traversing_node = traversing_node.getChildren()[-1]
 
             largest_key = traversing_node.getKeys()[-1]
-            traversing_node.deleteKey(largest_key)
+            traversing_node.deleteKey(largest_key) # todo: No delete !
 
             print(f"GET INORDER SUCCESSOR OF NODE{node},KEY:{key} --> {largest_key}")
 
@@ -445,17 +454,18 @@ class BalancedTree:
         it is in.
 
         Args:
-            node:
-            key:
+            node (Node): The node where "key" is in
+            key (int): The key, whose in order successor should be found.
 
         Returns:
+            Tuple[Node, int]: The largest key and the node it is in.
 
         """
 
         if not node.hasKey(key):
-            return ValueError(f"Node does not contain {key}")
+            raise ValueError(f"Node does not contain {key}")
         elif node.isLeaf():
-            return ValueError("Node is a leaf and does not have a in order predecessor")
+            raise ValueError("Node is a leaf and does not have a in order predecessor")
         else:
             # get reference to child on the right of "key" --> index equal to index of key + 1 as seen below:
             # node.keys:               [1,   3,   7,   8]
@@ -512,10 +522,13 @@ class BalancedTree:
 
     def __str__(self) -> str:
         """
+        Overrides the string representation of the tree, return a formatted tree.
 
         Returns:
+            str: Formatted Tree
 
         """
+
         out = []
         # Basic list contains the root only
         nodes: list[list[Node]] = [[self.root]]

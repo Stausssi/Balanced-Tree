@@ -1,12 +1,19 @@
+# this is needed, so that a method in the Node class can return an Instance of type "Node"
+from __future__ import annotations
+
+from typing import Tuple
+
+
 class Node:
     """
-    This class represents one node in the BalancedTree class
+    This class represents one node in the BalancedTree class. A node has one parent, a minimal number of k and a maximal
+    number of 2k keys. If the node has n keys, it must have n+1 children.
 
     Args:
-        k(int): Order of the balanced tree, minimal number of keys in one node
-        keys(list[int]): Keys of the node
-        children(list[Node]): Children of the node, for n keys are n+1 children
-        parent(Node or None): Parent of the node, if Parent is None, the node is the root
+        k (int): Order of the balanced tree, minimal number of keys in one node
+        keys (list[int]): Keys of the node
+        children (list[Node]): Children of the node, for n keys are n+1 children
+        parent (Node | None): Parent of the node, if Parent is None, the node is the root
     """
 
     def __init__(self, k, keys=None, children=None, parent=None):
@@ -32,55 +39,60 @@ class Node:
             key(int): The key that should be checked
 
         Returns:
-            bool: True, if key is in node
-
+            bool: True, if key is in node, else false
         """
 
         return key in self.keys
 
-    def addKeyAndChild(self, insert_key, child=None):
+    def addKeyAndChild(self, insert_key, child=None) -> None:
         """
         Inserts a key sorted into a leaf node (child=None)
         or insert a key and a corresponding child in a non leaf node (child=Node).
+        The child is inserted logically on the right of the inserted key.
 
         Args:
-            insert_key(int): Inserted key
-            child(Node or None): Child, that should be inserted logically after insert_key
+            insert_key (int): Inserted key
+            child (Node | None): Child, that should be inserted logically after insert_key
 
         Returns:
-
+            None: Nothing
         """
+
         # insert new key into keys array so that it stays sorted
         key_insert_index = self.insert_key_sorted(insert_key)
         # insert new child into children array
         if child is not None:
             self.children.insert(key_insert_index + 1, child)
 
-    def insert_key(self, index, key):
+    def insert_key(self, index, key) -> None:
         """
+        Insert a key at a given index.
 
         Args:
-            index(int):
-            key(int):
+            index (int): Index to be inserted
+            key (int): Key that is inserted
 
         Returns:
-
+            None: Nothing
         """
+
         if index >= 0:
             self.keys.insert(index, key)
         else:
             self.keys.append(key)
 
-    def insert_child(self, index, child):
+    def insert_child(self, index, child) -> None:
         """
+        Insert child at given index
 
         Args:
-            index(int):
-            child(Node):
+            index (int): Index where child is inserted
+            child (Node): Child to be inserted
 
         Returns:
-
+            None: Nothing
         """
+
         if index >= 0:
             self.children.insert(index, child)
         else:
@@ -91,11 +103,10 @@ class Node:
         Delete a key from the node, if the node is a leaf.
 
         Args:
-            key(int):
+            key (int): key to delete
 
         Returns:
-            None
-
+            None: Nothing
         """
 
         self.keys.remove(key)
@@ -202,6 +213,7 @@ class Node:
             self.keys = keys_left_node
             self.children = children_left_node
 
+            # create new right node
             new_right_node = Node(self.k, keys=keys_right_node, children=children_right_node,
                                   parent=self.parent)
 
@@ -211,15 +223,15 @@ class Node:
 
             return self, middle_key, new_right_node
 
-    def getSubtree(self, key_to_search):
+    def getSubtree(self, key_to_search) -> Node | None:
         """
-        Find the subtree, in which a key has to saved.
+        Find a subtree, in which
 
         Args:
             key_to_search(int): Key
 
         Returns:
-            Node: child node, whose subtree contains the key_to_search
+            Node | None: child node, whose subtree contains the key_to_search
 
         """
 
@@ -262,20 +274,22 @@ class Node:
 
     def isRoot(self) -> bool:
         """
+        Checks, if the node is the root.
 
         Returns:
-
+            bool: True, if node is the root.
         """
+
         return self.parent is None
 
     def isOverflow(self) -> bool:
         """
-        Checks, if the node had an overflow. This happens, when the max number of key elements of (2*k) is exceeded.
+        Checks, if the node had an overflow. This happens, when the max number of key elements of (2k) is exceeded.
 
         Returns:
             bool: True, if an overflow occurred
-
         """
+
         return len(self.keys) > 2 * self.k
 
     def isUnderflow(self) -> bool:
@@ -285,17 +299,18 @@ class Node:
 
         Returns:
             bool: True, if an underflow occurred
-
         """
+
         return len(self.keys) < self.k
 
     def more_than_minimal_elements(self) -> bool:
         """
-        checks, if the node has minimal number of elements.
+        Checks, if the node has more than minimal number of elements (k).
 
         Returns:
-
+            bool: True, if the node has more than k keys.
         """
+
         return len(self.keys) > self.k
 
     def insert_key_sorted(self, insert_key) -> int:
@@ -303,12 +318,13 @@ class Node:
         Insert key into the correct position of the nodes sorted key array and return the index.
 
         Args:
-            insert_key(int): Key to be inserted
+            insert_key (int): Key to be inserted
 
         Returns:
             int: Index of new key
 
         """
+
         for index, key in enumerate(self.keys):
             if insert_key < key:
                 self.keys.insert(index, insert_key)
@@ -327,22 +343,23 @@ class Node:
         """
         return f'[{" ".join(str(x) for x in self.keys)}]'
 
-    # getters and setters
-
-    def getParent(self):
+    def getParent(self) -> Node:
         """
+        Get the parent of a node.
 
         Returns:
             Node: Parent of current node
-
         """
+
         return self.parent
 
-    def get_right_sibling(self):
+    def get_right_sibling(self) -> Tuple[Node, int] | Tuple[None, None]:
         """
+        Get the right sibling of the current node and it´s index in parent children.
+        Return (None,None), if right sibling does not exist.
 
         Returns:
-            Node
+            Tuple[Node,int] | Tuple[None,None]: Right sibling and it´s index in parent children.
 
         """
 
@@ -360,14 +377,15 @@ class Node:
                 # no right sibling exists
                 return None, None
 
-    def get_left_sibling(self):
+    def get_left_sibling(self) -> Tuple[Node, int] | Tuple[None, None]:
         """
+        Get the left sibling of the current node and it´s index in parent children.
+        Return (None,None), if right sibling does not exist.
 
         Returns:
-            Node
+            Tuple[Node, int] | Tuple[None, None]: Left sibling and it´s index in parent children.
 
         """
-
         if self.isRoot():
             raise ValueError("No left sibling exist, node is root")
         else:
@@ -382,14 +400,49 @@ class Node:
                 # index of seperator key is the same as index of left_sibling.
                 return self.parent.children[left_index], left_index
 
-    def setParent(self, parent):
+    def setParent(self, parent) -> None:
+        """
+        Set parent of node.
+
+        Args:
+            parent (Node): new parent of node
+
+        Returns:
+            None: Nothing
+
+        """
         self.parent = parent
 
-    def getChildren(self):
+    def getChildren(self) -> list[Node]:
+        """
+        Get all children of node.
+
+        Returns:
+            list[Node]: List of all children
+
+        """
         return self.children
 
-    def getKeys(self):
+    def getKeys(self) -> list[int]:
+        """
+        Get all keys of node.
+
+        Returns:
+            list[int]: List of all keys.
+
+        """
         return self.keys
 
-    def setChild(self, child, index):
+    def setChild(self, child, index) -> None:
+        """
+        Set a child at an index
+
+        Args:
+            child (Node): the child to set at index
+            index (int): The index where child should be set.
+
+        Returns:
+            None: Nothing
+
+        """
         self.children[index] = child
