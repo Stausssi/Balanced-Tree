@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from typing import Tuple
+
+from loguru import logger
 
 import config
 from .Node import Node
@@ -21,6 +25,55 @@ class BalancedTree:
         self.root = Node(k)
         self.k = k
 
+    def search(self, key) -> Tuple[Node, int]:
+        """
+        Searches the whole balanced tree for a given key from the root recursively.
+
+        Args:
+            key (int): Key that is searched for in the balanced tree
+
+        Returns:
+            Tuple[Node,int]: The node the key was found in and the key
+
+        """
+        # recursively search the tree for "key"A
+        return self.__recursive_search(self.root, key)
+
+    def __recursive_search(self, node, key_to_search) -> tuple[Node, int] | tuple[Node, None]:
+        """
+        Searches the balanced tree from a node for a given key recursively.
+
+        Args:
+            node (Node): The Node that should be searched recursively
+            key_to_search (int): Key to search for
+
+        Returns:
+            Tuple[Node,int]: Either (Node, int): key was found and the node it was found in
+                            or (Node, None): key was not found, should be inserted in node
+
+        """
+        # logging
+        logger.info(f"SEARCH FOR KEY {key_to_search} in node: {node}")
+
+        # send the current node to the GUI, to visualize searching
+        if not config.DEBUG:
+            config.mainWindow.addNoteToPath(node)
+
+        if node.hasKey(key_to_search):
+            # key was found
+            # the key is returned, data could also be returned
+            logger.info(f"KEY {key_to_search} WAS FOUND IN NODE: {node}")
+            return node, key_to_search
+        else:
+            # determine next child node to search recursively
+            child_node = node.getSubtree(key_to_search)
+            if child_node is None:
+                # key could not be found, should be inserted at node
+                logger.info(f"KEY COULD NOT BE FOUND, SHOULD BE INSERTED IN NODE: {node}")
+                return node, None
+            else:
+                return self.__recursive_search(child_node, key_to_search)
+
     def insert(self, insert_key) -> None:
         """
         Inserts a new key into the binary tree
@@ -32,6 +85,7 @@ class BalancedTree:
             None
 
         """
+
         # find the node to insert the new key
         target_node, found_key = self.search(insert_key)
         if found_key is not None:
@@ -56,12 +110,19 @@ class BalancedTree:
             None
 
         """
+        logger.info(f"INSERT KEY {key} WITH CHILD {child} INTO NODE {node}")
 
+        # insert key and child into node at correct position.
         node.addKeyAndChild(key, child)
 
         if node.isOverflow():
             # split node into two nodes and middle key
             new_left_node, middle_key, new_right_node = node.split()
+
+            # logging
+            logger.info(f"OVERFLOW, SPLIT NODE INTO LEFT NODE:{new_left_node}, MIDDLE_KEY:{middle_key}"
+                        f" AND RIGHT NODE:{new_right_node}")
+
             # check if node is the root
             if node.getParent() is None:
                 # node is the root
@@ -72,59 +133,21 @@ class BalancedTree:
                 new_right_node.setParent(new_root)
                 # set new root as tree root
                 self.root = new_root
+
+                # logging
+                logger.info(f"MAKE NEW ROOT {new_root} WITH LEFT AND RIGHT NODE AS CHILDREN")
             else:
                 # recursively insert middle_key into the parent node of the "node"
                 # also add reference to the new_right_node after the middle_key in the parent node
                 parent_node = new_left_node.getParent()
                 self.__recursive_insert(parent_node, middle_key, child=new_right_node)
 
-    def search(self, key) -> Tuple[Node, int]:
-        """
-        Searches the whole balanced tree for a given key from the root recursively.
-
-        Args:
-            key (int): Key that is searched for in the balanced tree
-
-        Returns:
-            Tuple[Node,int]: The node the key was found in and the key
-
-        """
-        # recursively search the tree for "key"
-        return self.__recursive_search(self.root, key)
-
-    def __recursive_search(self, node, key_to_search) -> tuple[Node, int] | tuple[Node, None]:
-        """
-        Searches the balanced tree from a node for a given key recursively.
-
-        Args:
-            node (Node): The Node that should be searched recursively
-            key_to_search (int): Key to search for
-
-        Returns:
-            Tuple[Node,int]: Either (Node, int): key was found and the node it was found in
-                            or (Node, None): key was not found, should be inserted in node
-
-        """
-
-        if not config.DEBUG:
-            config.mainWindow.addNoteToPath(node)
-
-        if node.hasKey(key_to_search):
-            # the key is returned, data could also be returned
-            return node, key_to_search
-        else:
-            # determine next child node to search recursively
-            child_node = node.getSubtree(key_to_search)
-            if child_node is None:
-                # key could not be found, should be inserted at node
-                return node, None
-            else:
-                return self.__recursive_search(child_node, key_to_search)
-
     def delete(self, key) -> None:
         """
         Delete a key from the balanced tree. This is an implementation of the following description
         (https://www.cs.rhodes.edu/~kirlinp/courses/db/f16/handouts/btrees-deletion.pdf):
+
+        Deletion has two base cases:
 
         Deletion from a leaf node
             1. Search for the value to delete.
@@ -147,24 +170,23 @@ class BalancedTree:
 
         """
 
-        print(f"\n-----delete{key}-----")
-        print("before deletion\n")
-        print(self)
-        print("\n")
-
         # find the node to delete the key
         target_node, found_key = self.search(key)
         if found_key is not None:
-            print(f"FOUND KEY IN NODE: {target_node}")
+
             # check if target_node is leaf node
             if target_node.isLeaf():
+                # logging
+                logger.info(f"DELETE KEY FROM LEAF NODE: {target_node}")
+
                 # delete from leaf and rebalance the tree, if an underflow occurred
-                print(f"DELETE KEY FROM LEAF NODE: {target_node}")
                 target_node.deleteKey(found_key)
 
                 # only rebalance the node in an underflow, if it is not a leaf and the root at the same time
                 if target_node.isUnderflow() and not (target_node.isLeaf() and target_node.isRoot()):
-                    print(f"LEAF NODE UNDERFLOW: {target_node}")
+                    # logging
+                    logger.info(f"LEAF NODE UNDERFLOW: {target_node}")
+
                     self.__recursive_rebalance(target_node)
             else:
                 # target_node is an internal node
@@ -174,11 +196,14 @@ class BalancedTree:
                 # replace element that should be deleted with the successor_key
                 target_node.replace_key(key, successor_key)
 
-                print(f"REPLACE KEY WITH IN_ORDER_SUCCESSOR({successor_key}): {target_node}")
+                # logging
+                logger.info(f"REPLACE KEY({key}) WITH IN ORDER SUCCESSOR ({successor_key})")
 
-                # fix successor node if it had an underflow
+                # recursively fix successor node if it had an underflow
                 if successor_node.isUnderflow():
-                    print(f"SUCCESSOR NODE UNDERFLOW: {successor_node}")
+                    # logging
+                    logger.info(f"SUCCESSOR NODE UNDERFLOW: {successor_node}")
+
                     self.__recursive_rebalance(successor_node)
         else:
             # key wasn´t found in tree
@@ -232,7 +257,7 @@ class BalancedTree:
 
         """
 
-        print(f"NODE {deficient_node} IS DEFICIENT, START REBALANCING")
+        logger.info(f"NODE {deficient_node} IS DEFICIENT, START REBALANCING")
 
         # check if either left or right sibling exist and have more than k elements
         # if so, rotate left/right, and else merge the deficient node with either the left or right sibling
@@ -242,34 +267,35 @@ class BalancedTree:
 
         if right_sibling is not None and right_sibling.more_than_minimal_elements():
             # rotate left
-            print(f"ROTATE LEFT: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
+            logger.info(f"ROTATE LEFT: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
             self.__rotate_left(deficient_node, right_sibling, seperator_key_index_right)
-            print(f"AFTER ROTATION: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
+            logger.info(f"AFTER ROTATION: DEF{deficient_node},PARENT{parent},RIGHT SIBLING{right_sibling}")
         elif left_sibling is not None and left_sibling.more_than_minimal_elements():
             # rotate right
-            print(f"ROTATE RIGHT: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
+            logger.info(f"ROTATE RIGHT: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
             self.__rotate_right(deficient_node, left_sibling, seperator_key_index_left)
-            print(f"AFTER ROTATION: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
+            logger.info(f"AFTER ROTATION: LEFT SIBLING{left_sibling},PARENT{parent},DEF{deficient_node}")
         else:
             # if right sibling exist, merge with right sibling, else merge with left sibling
 
             if right_sibling is not None:
                 # merge deficient node with right sibling
-                print(f"MERGE DEFICIENT NODE WITH RIGHT SIBLING: DEF{deficient_node}, RIGHT SIBLING{right_sibling}")
+                logger.info(
+                    f"MERGE DEFICIENT NODE WITH RIGHT SIBLING: DEF{deficient_node}, RIGHT SIBLING{right_sibling}")
                 merged_node = self.__merge_nodes(deficient_node, right_sibling, seperator_key_index_right)
-                print(f"MERGED NODE: {merged_node}")
+                logger.info(f"MERGED NODE: {merged_node}")
             else:
                 # merge deficient node with left sibling
-                print(f"MERGE DEFICIENT NODE WITH LEFT SIBLING: LEFT SIBLING{left_sibling}, DEF{deficient_node}")
+                logger.info(f"MERGE DEFICIENT NODE WITH LEFT SIBLING: LEFT SIBLING{left_sibling}, DEF{deficient_node}")
                 merged_node = self.__merge_nodes(left_sibling, deficient_node, seperator_key_index_left)
-                print(f"MERGED NODE: {merged_node}")
+                logger.info(f"MERGED NODE: {merged_node}")
 
             # parent has now one element less than before.
             # if parent is the root and now has no elements, make the merged node the new root
             if parent.isRoot() and parent.getKeys() == []:
                 self.root = merged_node
                 merged_node.setParent(None)
-                print("PARENT NODE IS ROOT AND EMPTY --> NEW ROOT")
+                logger.info("PARENT NODE IS ROOT AND EMPTY --> NEW ROOT")
             elif parent.isUnderflow():
                 # if parent had an underflow, recursively rebalance the parent if it is not the root
                 if not parent.isRoot():
@@ -440,9 +466,9 @@ class BalancedTree:
                 traversing_node = traversing_node.getChildren()[-1]
 
             largest_key = traversing_node.getKeys()[-1]
-            traversing_node.deleteKey(largest_key) # todo: No delete !
+            traversing_node.deleteKey(largest_key)  # todo: No delete !
 
-            print(f"GET INORDER SUCCESSOR OF NODE{node},KEY:{key} --> {largest_key}")
+            logger.info(f"GET INORDER SUCCESSOR OF NODE{node},KEY:{key} --> {largest_key}")
 
             # return the biggest key in the leaf node
             return traversing_node, largest_key
