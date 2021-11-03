@@ -1,13 +1,6 @@
 import random
-from enum import Enum, auto
 
 from PyQt6.QtCore import pyqtSignal, QThread
-
-
-class WorkerType(Enum):
-    INSERT = auto()
-    DELETE = auto()
-    RANGE_INSERT = auto()
 
 
 class AsyncWorker(QThread):
@@ -41,7 +34,7 @@ class AsyncWorker(QThread):
 
         errorList: list[Exception] = []
 
-        # check whether random insert is desired
+        # Check whether random insert is desired
         if all([string in [tup[0] for tup in self.__operations] for string in ["lower", "upper", "count"]]):
             try:
                 lower = int([operation[1] for operation in self.__operations if operation[0] == "lower"][0])
@@ -67,10 +60,12 @@ class AsyncWorker(QThread):
             for operation, value in self.__operations:
                 try:
                     entryCount += 1
+
                     # Check if value is an int, or a list of the length 1 with 1 digit inside
                     if isinstance(value, int) or len(value) == 1 and value[0].isdigit():
                         if not isinstance(value, int):
                             value = int(value[0])
+
                         match operation.lower():
                             case "i":
                                 self.__tree.insert(value)

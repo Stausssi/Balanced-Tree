@@ -387,7 +387,6 @@ class MainWindow(QWidget):
 
         # Enable the window again on finish
         worker.finished.connect(finishedProcedure)
-        # worker.finished.connect(worker.deleteLater)
 
         # Start
         worker.start()
