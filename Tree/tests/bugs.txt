@@ -3,3 +3,5 @@
 3) Delete last two nodes --> Fixed
 4) Order 2: delete node from leaf where all leafs and parent are at len(k) --> fixed
 5) ODer 2: delete node from --> fixed
+6) Load bugtest.csv --> delete root 8 --> Fixed
+9) delete last node --> Fixed
