@@ -503,8 +503,9 @@ class MainWindow(QWidget):
         """
 
         logger.info(f"DELETE: {value}")
-        self.__tree.delete(int(value))
-        self.updateTreeLayout()
+        self._tree.delete(int(value))
+        self.__updateTreeLayout()
+        logger.info(str(self._tree))
 
     def __showCSVContents(self, path) -> None:
         """

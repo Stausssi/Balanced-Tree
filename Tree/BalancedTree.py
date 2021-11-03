@@ -49,6 +49,7 @@ class BalancedTree:
             None
 
         """
+
         node.addKeyAndChild(key, child)
 
         if node.isOverflow():
@@ -98,7 +99,8 @@ class BalancedTree:
 
         """
 
-        config.mainWindow.addNoteToPath(node)
+        if not config.DEBUG:
+            config.mainWindow.addNoteToPath(node)
 
         if node.hasKey(key_to_search):
             # the key is returned, data could also be returned
@@ -175,6 +177,10 @@ class BalancedTree:
             None
 
         """
+        print(f"\n-----delete{key}-----")
+        print("before deletion\n")
+        print(self)
+        print("\n")
 
         # find the node to delete the key
         target_node, found_key = self.search(key)
@@ -206,7 +212,7 @@ class BalancedTree:
                     self.__recursive_rebalance(successor_node)
         else:
             # key wasn´t found in tree
-            raise ValueError(f"{found_key} is not in the tree.")
+            raise ValueError(f"{key} is not in the tree.")
 
     def __recursive_rebalance(self, deficient_node):
         """
@@ -259,8 +265,9 @@ class BalancedTree:
                 merged_node.setParent(None)
                 print("PARENT NODE IS ROOT AND EMPTY --> NEW ROOT")
             elif parent.isUnderflow():
-                # if parent had an underflow, recursively rebalance the parent
-                self.__recursive_rebalance(parent)
+                # if parent had an underflow, recursively rebalance the parent if it is not the root
+                if not parent.isRoot():
+                    self.__recursive_rebalance(parent)
 
     def __merge_nodes(self, left_node, right_node, seperator_index) -> Node:
         """

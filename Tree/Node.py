@@ -66,7 +66,10 @@ class Node:
         Returns:
 
         """
-        self.keys.insert(index, key)
+        if index >= 0:
+            self.keys.insert(index, key)
+        else:
+            self.keys.append(key)
 
     def insert_child(self, index, child):
         """
@@ -78,7 +81,10 @@ class Node:
         Returns:
 
         """
-        self.children.insert(index, child)
+        if index >= 0:
+            self.children.insert(index, child)
+        else:
+            self.children.append(child)
 
     def deleteKey(self, key) -> None:
         """
@@ -341,7 +347,7 @@ class Node:
         """
 
         if self.isRoot():
-            return ValueError("No right sibling exist, node is root")
+            raise ValueError("No right sibling exist, node is root")
         else:
             # get index of node in the parent node.children on the right of the current node
             own_index = self.parent.children.index(self)
@@ -363,7 +369,7 @@ class Node:
         """
 
         if self.isRoot():
-            return ValueError("No left sibling exist, node is root")
+            raise ValueError("No left sibling exist, node is root")
         else:
             # get index of node in the parent node.children on the left of the current node
             left_index = self.parent.children.index(self) - 1
