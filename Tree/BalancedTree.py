@@ -1,5 +1,8 @@
+from typing import Tuple
+
 import config
 from .Node import Node
+
 
 # todo: Integrate inorder successor and predecessor
 # todo: Logging
@@ -23,7 +26,7 @@ class BalancedTree:
         Inserts a new key into the binary tree
 
         Args:
-            insert_key(int): Key to be inserted
+            insert_key (int): Key to be inserted
 
         Returns:
             None
@@ -44,9 +47,9 @@ class BalancedTree:
         the parent. If the parent is full and the root, create a new root.
 
         Args:
-            node(Node): Node where the key should be inserted
-            key(int): key that should be inserted
-            child(Node): Reference to a child node, whose reference should be inserted after "key".
+            node (Node): Node where the key should be inserted
+            key (int): key that should be inserted
+            child (Node): Reference to a child node, whose reference should be inserted after "key".
                     ATTENTION ! This should only be used for inserting references into non leaf nodes
 
         Returns:
@@ -75,30 +78,30 @@ class BalancedTree:
                 parent_node = new_left_node.getParent()
                 self.__recursive_insert(parent_node, middle_key, child=new_right_node)
 
-    def search(self, key):
+    def search(self, key) -> Tuple[Node, int]:
         """
         Searches the whole balanced tree for a given key from the root recursively.
 
         Args:
-            key(int): Key that is searched for in the balanced tree
+            key (int): Key that is searched for in the balanced tree
 
         Returns:
-            Tuple[Node,int]: An Integer if the key was found, else None
+            Tuple[Node,int]: The node the key was found in and the key
 
         """
         # recursively search the tree for "key"
         return self.__recursive_search(self.root, key)
 
-    def __recursive_search(self, node, key_to_search):
+    def __recursive_search(self, node, key_to_search) -> tuple[Node, int] | tuple[Node, None]:
         """
         Searches the balanced tree from a node for a given key recursively.
 
         Args:
-            node(Node): The Node that should be searched recursively
-            key_to_search(int): Key to search for
+            node (Node): The Node that should be searched recursively
+            key_to_search (int): Key to search for
 
         Returns:
-            Tuple(Node,int): Either (Node, int): key was found and the node it was found in
+            Tuple[Node,int]: Either (Node, int): key was found and the node it was found in
                             or (Node, None): key was not found, should be inserted in node
 
         """
@@ -137,12 +140,13 @@ class BalancedTree:
 
 
         Args:
-            key(int): key to delete
+            key(int): key to delete from balanced tree
 
         Returns:
-            None
+            None: Nothing
 
         """
+
         print(f"\n-----delete{key}-----")
         print("before deletion\n")
         print(self)
@@ -278,11 +282,30 @@ class BalancedTree:
 
     def __merge_nodes(self, left_node, right_node, seperator_index) -> Node:
         """
+        Merge two nodes that have the minimum number of elements, lie next to each other and have the same
+        parent into one node.
+
+        This is done by combining the children/keys of left and right node, together with their seperator of the parent.
+        This is seen in the example below (k = 1):
+
+                                         seperator
+                                             |
+               [ 5    8 ]     delete 1     [ 5    8 ]   merge [] and [6]        [ 8 ]
+             [1]  [6]  [9]   -------->   [x]  [6]  [9]  ---------------->    [5 6] [9 ]
+
+
+        This is done using the following steps:
+
+        1. Copy the separator to the end of the left node (the left node may be the deficient node or it may be
+            the sibling with the minimum number of elements)
+        2. Move all elements from the right node to the left node (the left node now has the maximum number
+            of elements, and the right node – empty)
+        3. Remove the separator from the parent along with its empty right child (the parent loses an element)
 
         Args:
-            left_node(Node):
-            right_node(Node):
-            seperator_index(int):
+            left_node (Node):
+            right_node (Node):
+            seperator_index (int):
 
         Returns:
             Node:
@@ -374,7 +397,7 @@ class BalancedTree:
         parent.replace_key(seperator_key, last_key_left_sibling)
 
     @staticmethod
-    def __get_in_order_successor(node, key): # todo: naming
+    def __get_in_order_successor(node, key):  # todo: naming
         """
         Get the largest key in the subtree of the left child of the given node and key. Return the key and the node
         it is in.
