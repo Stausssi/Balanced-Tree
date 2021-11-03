@@ -42,7 +42,7 @@ class AsyncWorker(QThread):
         errorList: list[Exception] = []
 
         # check whether random insert is desired
-        if any([string in [tup[0] for tup in self.__operations] for string in ["lower", "upper", "count"]]):
+        if all([string in [tup[0] for tup in self.__operations] for string in ["lower", "upper", "count"]]):
             try:
                 lower = int([operation[1] for operation in self.__operations if operation[0] == "lower"][0])
                 upper = int([operation[1] for operation in self.__operations if operation[0] == "upper"][0])
@@ -62,21 +62,29 @@ class AsyncWorker(QThread):
             except IndexError as e:
                 errorList.append(e)
         else:
+            entryCount = 0
             # Otherwise, go through operations and perform the operation
             for operation, value in self.__operations:
                 try:
-                    match operation.lower():
-                        case "i":
-                            self.__tree.insert(value)
-                        case "d":
-                            self.__tree.delete(value)
-                        case _:
-                            raise ValueError(f"Unknown operation '{operation}'!")
+                    entryCount += 1
+                    # Check if value is an int, or a list of the length 1 with 1 digit inside
+                    if isinstance(value, int) or len(value) == 1 and value[0].isdigit():
+                        if not isinstance(value, int):
+                            value = int(value[0])
+                        match operation.lower():
+                            case "i":
+                                self.__tree.insert(value)
+                            case "d":
+                                self.__tree.delete(value)
+                            case _:
+                                raise ValueError(f"Unknown operation '{operation}'!")
 
-                    self.refresh.emit()
-                    self.msleep(1000 // self._animationSpeed)
+                        self.refresh.emit()
+                        self.msleep(1000 // self._animationSpeed)
+                    else:
+                        raise ValueError(f"Invalid values: {value}")
                 except Exception as e:
-                    errorList.append(e)
+                    errorList.append(Exception(f"{entryCount}: {e}"))
 
         # Return the errors
         self.finished.emit(errorList)
