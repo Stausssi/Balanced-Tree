@@ -413,7 +413,7 @@ class MainWindow(QWidget):
             self._tree = BalancedTree(self.__order)
 
             # logging
-            logger.info(f"The order of the tree is changed to {value}")
+            logger.success(f"GUI: THE ORDER OF THE TREE IS CHANGED TO {value}")
 
             # Insert each old value into the new tree
             self.__runWorker([("i", value) for value in values])
@@ -451,6 +451,8 @@ class MainWindow(QWidget):
             ValueError: If bulkInsert is true and the value couldn't be inserted into the tree.
         """
 
+        logger.success(f"GUI: INSERT {value}")
+
         try:
             self._tree.insert(int(value))
 
@@ -468,6 +470,8 @@ class MainWindow(QWidget):
         Returns:
             None: Nothing
         """
+
+        logger.success(f"GUI: SEARCH {value}")
 
         self.__searchPath = []
         node, key = self._tree.search(int(value))
@@ -500,10 +504,10 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        logger.info(f"DELETE: {value}")
+        logger.success(f"GUI DELETE: {value}")
+
         self._tree.delete(int(value))
         self.__updateTreeLayout()
-        logger.info(str(self._tree))
 
     def __showCSVContents(self, path) -> None:
         """
@@ -537,6 +541,8 @@ class MainWindow(QWidget):
         Returns:
             None: Nothing
         """
+
+        logger.success(f"GUI: IMPORT CSV FILE")
 
         # Start the async task with the operations in the CSV file. The worker will filter invalid entries.
         self.__runWorker([
@@ -602,6 +608,9 @@ class MainWindow(QWidget):
                 )
             else:
                 # Start the worker
+
+                logger.success(f"GUI: AUTOFILL {count} VALUES FROM {lowerBorder} TO {upperBorder}")
+
                 self.__runWorker([("lower", lowerBorder), ("upper", upperBorder), ("count", count)])
 
     def __reset(self) -> None:
@@ -611,6 +620,8 @@ class MainWindow(QWidget):
         Returns:
             None: Nothing
         """
+
+        logger.success(f"GUI: RESET THE TREE")
 
         self._tree = BalancedTree(self.__order)
         self.__updateTreeLayout()
