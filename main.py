@@ -27,8 +27,8 @@ def main():
     config.mainWindow = MainWindow()
 
     # Execute the Application
+    logger.info("Starting the application!")
     application.exec()
-    logger.info("Started the application!")
 
 
 if __name__ == "__main__":

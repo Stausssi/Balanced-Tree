@@ -28,7 +28,7 @@ class MainWindow(QWidget):
 
         # Variables
         self.__scrollContent = ""
-        self.__animationSpeed = 1
+        self.__animationSpeed = 3
         self.__currentWorker: Optional[AsyncWorker] = None
 
         self.__order = DEFAULT_ORDER
@@ -191,12 +191,13 @@ class MainWindow(QWidget):
         orderLayout = createVerticalLayout([orderLabel, orderInput])
 
         # Create the animation speed slider
-        sliderLabel = QLabel("Animation speed: 1")
+        sliderLabel = QLabel(f"Animation speed: {self.__animationSpeed}")
         sliderLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         slider = QSlider()
         slider.setOrientation(Qt.Orientation.Horizontal)
         slider.setRange(1, 5)
         slider.setSingleStep(1)
+        slider.setValue(self.__animationSpeed)
         slider.valueChanged.connect(lambda value: sliderLabel.setText(f"Animation speed: {value}"))
         slider.valueChanged.connect(self.__updateAnimationSpeed)
 
@@ -368,7 +369,7 @@ class MainWindow(QWidget):
 
                 self.__scrollContent = "\n".join([str(e) for e in errorList])
                 self.__showDialog(
-                    "Die nachfolgenden Fehler sind bei der Bearbeitung aufgetreten:",
+                    "Die nachfolgenden Einträge konnte nicht verarbeitet werden:",
                     resetScrollContent,
                     DialogType.SCROLL_CONTENT
                 )
@@ -503,8 +504,8 @@ class MainWindow(QWidget):
         """
 
         logger.info(f"DELETE: {value}")
-        self.__tree.delete(int(value))
-        self.updateTreeLayout()
+        self._tree.delete(int(value))
+        self.__updateTreeLayout()
 
     def __showCSVContents(self, path) -> None:
         """
@@ -539,58 +540,13 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        # Get the valid operations of the CSV file
-        operations = [
-            (operation, int(value[0]))
+        # Start the async task with the operations in the CSV file. The worker will filter invalid entries.
+        self.__runWorker([
+            (operation, value)
             for operation, *value in [
                 line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")
             ]
-            if operation.lower() in ["i", "d"] and len(value) == 1 and value[0].isdigit()
-        ]
-
-        # Start the async task
-        self.__runWorker(operations)
-
-        # TODO: invalid lines would be nice!
-        # invalidLines: dict[int, str] = {}
-        # lineCount = 1
-        #
-        # # Create a list of lists containing the operation as the first element and the value as the second
-        # for operation, *value in [line.replace(" ", "").split(",") for line in self.__scrollContent.split("\n")]:
-        #     # Check whether the value is singular
-        #     if len(value) == 1:
-        #         value = value[0]
-        #         operation = operation.lower()
-        #
-        #         # Match the operation
-        #         match operation:
-        #             case "i" | "d":
-        #                 operations.append((operation, value))
-        #             case _:
-        #                 # Add line to invalid lines
-        #                 invalidLines.update({
-        #                     lineCount: f"Invalid operation '{operation}'!"
-        #                 })
-        #     else:
-        #         # Add line to invalid lines
-        #         invalidLines.update({
-        #             lineCount: f"Invalid number of entries ({len(value)})!"
-        #         })
-        #
-        #     lineCount += 1
-        #
-        # if len(invalidLines) > 0:
-        #     self.__scrollContent = "\n".join([f"{line}: {error}" for line, error in invalidLines.items()])
-        #
-        #     self.__showDialog(
-        #         "The following lines contain mistakes and couldn't be added",
-        #         print,
-        #         DialogType.SCROLL_CONTENT,
-        #         False
-        #     )
-        #
-        # # Reset scroll content
-        # self.__scrollContent = ""
+        ])
 
     def __randomFill(self, lowerBorder, upperBorder, count) -> None:
         """
