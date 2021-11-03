@@ -12,3 +12,6 @@ mainWindow = None
 
 # Should be set to true, when the BalancedTree class is used without GUI
 DEBUG = False
+
+# Enable/disable logging
+LOGGING = True

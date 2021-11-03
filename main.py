@@ -12,7 +12,11 @@ from GUI import MainWindow
 @logger.catch
 def main():
     # create logging file
-    logger.add("logs/{time}.log", rotation="1 MB")
+
+    if config.LOGGING:
+        logger.add("logs/{time}.log", rotation="1 MB")
+    else:
+        logger.disable("")
 
     application = QApplication(sys.argv)
     application.setApplicationName("Balancierter Baum")
