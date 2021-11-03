@@ -2,7 +2,7 @@ from functools import partial
 from typing import Optional
 
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPainter, QColor
+from PyQt6.QtGui import QPainter, QColor, QPen
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
 from loguru import logger
 
@@ -38,6 +38,7 @@ class MainWindow(QWidget):
         self.__searchNode: Optional[GraphicalNode] = None
         self.__searchPath: list[GraphicalNode] = []
         self.__nodeFound = False
+        self.__searchTimer: Optional[QTimer] = None
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -156,11 +157,14 @@ class MainWindow(QWidget):
         painter = QPainter(self)
         for node in self.__graphicalNodes.values():
             if node in self.__searchPath:
+                pen = QPen()
+                pen.setWidth(3)
                 if self.__nodeFound or self.__searchNode is None:
-                    painter.setPen(QColor(0, 255, 0))
+                    pen.setColor(QColor(0, 255, 0))
                 else:
-                    painter.setPen(QColor(255, 0, 0))
+                    pen.setColor(QColor(255, 0, 0))
 
+                painter.setPen(pen)
                 if node == self.__searchNode:
                     painter.drawRect(self.__searchNode.geometry())
             else:
@@ -486,12 +490,10 @@ class MainWindow(QWidget):
             self.update()
 
         # Reset after delay
-        QTimer.singleShot(2500, resetSearch)
-
-        # if key:
-        #     displayUserMessage(f"{value} was found in the node {node}!")
-        # else:
-        #     displayUserMessage(f"{value} couldn't be found! Last searched node: {node}")
+        self.__searchTimer = QTimer()
+        self.__searchTimer.setSingleShot(True)
+        self.__searchTimer.timeout.connect(resetSearch)
+        self.__searchTimer.start(2500)
 
     def __delete(self, value) -> None:
         """
