@@ -405,7 +405,7 @@ class Node:
         Set parent of node.
 
         Args:
-            parent (Node): new parent of node
+            parent (Node|None): new parent of node.
 
         Returns:
             None: Nothing
