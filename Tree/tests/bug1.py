@@ -1,5 +1,6 @@
-from Tree.BalancedTree import BalancedTree
 import random
+
+from Tree.BalancedTree import BalancedTree
 
 bt = BalancedTree(2)
 

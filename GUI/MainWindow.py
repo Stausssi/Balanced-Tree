@@ -1,13 +1,10 @@
-import random
-import sys
-
 from functools import partial
 from typing import Optional
-from loguru import logger
 
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QPushButton, QLabel, QWidget, QSlider, QVBoxLayout, QFrame, QHBoxLayout, QSpinBox
+from loguru import logger
 
 from Tree import BalancedTree, Node
 from config import DEFAULT_ORDER, QIntValidator_MAX
