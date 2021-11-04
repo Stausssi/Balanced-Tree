@@ -1,0 +1,7 @@
+.git
+*.log
+Dockerfile
+.gitignore
+README.md
+venv
+.venv
