@@ -507,8 +507,12 @@ class MainWindow(QWidget):
 
         logger.success(f"GUI DELETE: {value}")
 
-        self._tree.delete(int(value))
-        self.__updateTreeLayout()
+        try:
+            self._tree.delete(int(value))
+
+            self.__updateTreeLayout()
+        except ValueError as e:
+            displayUserMessage("deleting value from the tree", e)
 
     def __showCSVContents(self, path) -> None:
         """
