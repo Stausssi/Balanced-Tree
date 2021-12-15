@@ -2,6 +2,8 @@ from enum import Enum, auto
 from typing import Union
 
 from PyQt6.QtCore import Qt
+import PyQt6.QtCore as QtCore
+from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QDialogButtonBox, QWidget, QLayout, QLineEdit, QPushButton, \
     QFormLayout, QFileDialog, QScrollArea
@@ -82,11 +84,21 @@ class ConfirmationDialog(QDialog):
         """
 
         match dialogType:
-            case DialogType.INSERT | DialogType.FIND | DialogType.DELETE:
-                # Create a layout containing a singular number input
-                # TODO: Use a regular expression validator to support multiple values at the same time
+            case DialogType.INSERT | DialogType.DELETE:
+                # Create a layout containing a multi-number input
                 numInput = QLineEdit()
-                numInput.setValidator(QIntValidator(0, QIntValidator_MAX))
+                regex = QtCore.QRegularExpression("^(\d+(,\d+)*)?$")
+                validator = QRegularExpressionValidator(regex)
+                numInput.setValidator(validator)
+                numInput.textChanged.connect(self.__updateButtonEnabled)
+
+                return createVerticalLayout([numInput])
+            case DialogType.FIND:
+                # Create a layout containing a singular number input
+                numInput = QLineEdit()
+                regex = QtCore.QRegularExpression("^\d+$")
+                validator = QRegularExpressionValidator(regex)
+                numInput.setValidator(validator)
                 numInput.textChanged.connect(self.__updateButtonEnabled)
 
                 return createVerticalLayout([numInput])

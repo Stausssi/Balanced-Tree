@@ -4,6 +4,7 @@ from typing import Tuple
 
 from loguru import logger
 
+
 import config
 from .Node import Node
 

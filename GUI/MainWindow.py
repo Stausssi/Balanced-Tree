@@ -317,6 +317,7 @@ class MainWindow(QWidget):
 
         if dialog.exec():
             callback(*dialog.getReturnValues())
+            print(*dialog.getReturnValues())
         elif onFail is not None:
             onFail()
 
@@ -455,11 +456,12 @@ class MainWindow(QWidget):
         """
 
         logger.success(f"GUI: INSERT {value}")
-
+        values_array = value.split(",")
         try:
-            self._tree.insert(int(value))
+            for number in values_array:
+                self._tree.insert(int(number))
 
-            self.__updateTreeLayout()
+                self.__updateTreeLayout()
         except ValueError as e:
             displayUserMessage("inserting value into the tree", e)
 
@@ -506,11 +508,13 @@ class MainWindow(QWidget):
         """
 
         logger.success(f"GUI DELETE: {value}")
+        values_array = value.split(",")
 
         try:
-            self._tree.delete(int(value))
+            for number in values_array:
+                self._tree.delete(int(number))
 
-            self.__updateTreeLayout()
+                self.__updateTreeLayout()
         except ValueError as e:
             displayUserMessage("deleting value from the tree", e)
 
