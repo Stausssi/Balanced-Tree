@@ -475,8 +475,12 @@ class MainWindow(QWidget):
 
         logger.success(f"GUI: SEARCH {value}")
 
-        self.__visualizeSearch = True
+        if self.__searchTimer is not None and self.__searchTimer.isActive():
+            self.__searchTimer.stop()
+
         self.__searchPath = []
+        self.__visualizeSearch = True
+
         node, key, costs = self._tree.search(int(value))
         self.__searchNode = self.__graphicalNodes.get(node)
         self.__nodeFound = key is not None
