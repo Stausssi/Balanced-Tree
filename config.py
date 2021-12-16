@@ -17,6 +17,7 @@ DEBUG = False
 LOGGING = True
 
 # base64 encoded icon
+# noinspection SpellCheckingInspection
 icon = """
 iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABmJLR0QA/wD/AP+gvaeTAAABXUlE
 QVR4nO2ZO27CQBRFT7IMqNlRUpEFJgV99hQhxW6J5BTkSYAMYvDMXI9zjzQFH/vde0SDHxhjTH42

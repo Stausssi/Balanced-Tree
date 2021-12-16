@@ -193,10 +193,14 @@ class BalancedTree:
                     replacement_node, replacement_key = self.__get_in_order_successor(target_node, key)
 
                     # logging
-                    logger.info(f"REPLACE KEY {key} WITH IN ORDER SUCCESSOR {replacement_key} FROM NODE {replacement_node}")
+                    logger.info(
+                        f"REPLACE KEY {key} WITH IN ORDER SUCCESSOR {replacement_key} FROM NODE {replacement_node}"
+                    )
                 else:
                     # logging
-                    logger.info(f"REPLACE KEY {key} WITH IN ORDER PREDECESSOR {replacement_key} FROM NODE {replacement_node}")
+                    logger.info(
+                        f"REPLACE KEY {key} WITH IN ORDER PREDECESSOR {replacement_key} FROM NODE {replacement_node}"
+                    )
 
                 # replace element that should be deleted with the predecessor_key
                 target_node.replace_key(key, replacement_key)
@@ -208,7 +212,7 @@ class BalancedTree:
                 if replacement_node.isUnderflow():
                     self.__recursive_rebalance(replacement_node)
         else:
-            # key wasn´t found in tree
+            # key wasn't found in tree
             raise ValueError(f"{key} is not in the tree.")
 
     def __recursive_rebalance(self, deficient_node) -> None:
@@ -249,7 +253,7 @@ class BalancedTree:
         • If the parent is the root and now has no elements, then free it and make the merged node the
             new root (tree becomes shallower)
 
-        • Otherwise, if the parent has fewer than the required number of elements, then rebalance theparent
+        • Otherwise, if the parent has fewer than the required number of elements, then rebalance the parent
 
         Args:
             deficient_node(Node): The node, that has less than k keys and should be rebalanced.
@@ -305,7 +309,7 @@ class BalancedTree:
                 if not parent.isRoot():
                     self.__recursive_rebalance(parent)
 
-    def __merge_nodes(self, left_node, right_node, seperator_index) -> Node:
+    def __merge_nodes(self, left_node, right_node, separator_index) -> Node:
         """
         Merge two nodes that have the minimum number of elements, lie next to each other and have the same
         parent into one node.
@@ -321,7 +325,7 @@ class BalancedTree:
 
         This is done using the following steps:
 
-        1. Copy the separator to the end of the left node (the left node may be the deficient node or it may be
+        1. Copy the separator to the end of the left node (the left node may be the deficient node, or it may be
             the sibling with the minimum number of elements)
         2. Move all elements from the right node to the left node (the left node now has the maximum number
             of elements, and the right node – empty)
@@ -330,7 +334,7 @@ class BalancedTree:
         Args:
             left_node (Node): Node on the left
             right_node (Node): Node on the right
-            seprator_index (int): Index of key in parent, that logically seperates left_node and right_node
+            separator_index (int): Index of key in parent, that logically separates left_node and right_node
 
         Returns:
             Node: The merged node
@@ -339,7 +343,7 @@ class BalancedTree:
 
         # add seperator key in parent to the left node
         parent = left_node.getParent()
-        seperator = parent.getKeys()[seperator_index]
+        seperator = parent.getKeys()[separator_index]
         left_node.addKeyAndChild(seperator)
 
         # create new node from the left and right nodes keys/children
@@ -357,7 +361,7 @@ class BalancedTree:
         parent.deleteKey(seperator)
         # remove child after seperator in parent and replace reference to child before seperator with new node
         parent.deleteChild(right_node)
-        parent.setChild(merged_node, seperator_index)
+        parent.setChild(merged_node, separator_index)
 
         return merged_node
 
@@ -423,7 +427,7 @@ class BalancedTree:
 
         # insert last child of left_sibling at the start of deficient node if nodes are internal nodes
         if not left_sibling.isLeaf():
-            # get last last child of left sibling
+            # get last child of left sibling
             last_child_left_sibling = left_sibling.popChild(-1)
             # set parent to deficient node
             last_child_left_sibling.setParent(deficient_node)

@@ -174,17 +174,17 @@ class Node:
 
             No overflow for k = 2
 
-            keys:       [    1,   3,   6,   ,7    ]
+            keys:       [    1,   3,   6,   7    ]
             children:   [ R1   R2   R3   R4    R5 ]
 
             insert key 5 with child OR4 --> overflow (max keys are 2*K = 4)
 
-            keys:       [    1,   3,     5,    6,   ,7     ]
+            keys:       [    1,   3,     5,    6,   7     ]
             children:   [ R1   R2   R3     0R4    R5    R6 ]
 
             split into the following parts:
 
-            keys:       [  1,   3,   ]      |5|     [     6,    ,7   ]
+            keys:       [  1,   3,   ]      |5|     [     6,    7   ]
             children:   [R1   R2   R3]              [ 0R4    R5    R6]
             parts:        left_node    middle_index      right_node
 
@@ -254,7 +254,7 @@ class Node:
                 else:
                     return self.children[index]
 
-        # "key_to_search" is greater than all of the nodes keys
+        # "key_to_search" is greater than all the nodes keys
         # If the node isn´t a leaf, the key is in the subtree, where the last reference of node.children points to.
         if self.isLeaf():
             return None
@@ -438,7 +438,7 @@ class Node:
         Set a child at an index
 
         Args:
-            child (Node): the child to set at index
+            child (Node): the child to set at index.
             index (int): The index where child should be set.
 
         Returns:
