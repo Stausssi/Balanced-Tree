@@ -477,7 +477,7 @@ class MainWindow(QWidget):
 
         self.__visualizeSearch = True
         self.__searchPath = []
-        node, key = self._tree.search(int(value))
+        node, key, costs = self._tree.search(int(value))
         self.__searchNode = self.__graphicalNodes.get(node)
         self.__nodeFound = key is not None
 
@@ -490,10 +490,17 @@ class MainWindow(QWidget):
             self.update()
 
         # Reset after delay
-        self.__searchTimer = QTimer()
-        self.__searchTimer.setSingleShot(True)
-        self.__searchTimer.timeout.connect(resetSearch)
-        self.__searchTimer.start(2500)
+        def startSearchTimer():
+            self.__searchTimer = QTimer()
+            self.__searchTimer.setSingleShot(True)
+            self.__searchTimer.timeout.connect(resetSearch)
+            self.__searchTimer.start(2000)
+
+        # Display a box with the amount of pages the search took
+        self.__showDialog(
+            f"Die Kosten der Suche belaufen sich auf {costs} Seitenzugriff(e)!",
+            startSearchTimer
+        )
 
     def __delete(self, value) -> None:
         """
@@ -592,7 +599,7 @@ class MainWindow(QWidget):
         else:
             # Get the existing keys
             existing_keys = [
-                found for _, found in [
+                found for _, found, _ in [
                     self._tree.search(i) for i in range(lowerBorder, upperBorder + 1)
                 ]
                 if found

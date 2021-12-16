@@ -20,7 +20,9 @@ class BalancedTree:
         self.root = Node(k)
         self.k = k
 
-    def search(self, key) -> Tuple[Node, int]:
+        self.__searchCount = 0
+
+    def search(self, key) -> Tuple[Node, int, int]:
         """
         Searches the whole balanced tree for a given key from the root recursively.
 
@@ -31,10 +33,13 @@ class BalancedTree:
             Tuple[Node,int]: The node the key was found in and the key
 
         """
+
+        self.__searchCount = 0
+
         # recursively search the tree for "key"A
         return self.__recursive_search(self.root, key)
 
-    def __recursive_search(self, node, key_to_search) -> tuple[Node, int] | tuple[Node, None]:
+    def __recursive_search(self, node, key_to_search) -> tuple[Node, int, int] | tuple[Node, None, int]:
         """
         Searches the balanced tree from a node for a given key recursively.
 
@@ -54,18 +59,20 @@ class BalancedTree:
         if not config.DEBUG:
             config.mainWindow.addNoteToPath(node)
 
+        self.__searchCount += 1
+
         if node.hasKey(key_to_search):
             # key was found
             # the key is returned, data could also be returned
             logger.info(f"KEY {key_to_search} WAS FOUND IN NODE: {node}")
-            return node, key_to_search
+            return node, key_to_search, self.__searchCount
         else:
             # determine next child node to search recursively
             child_node = node.getSubtree(key_to_search)
             if child_node is None:
                 # key could not be found, should be inserted at node
                 logger.info(f"KEY COULD NOT BE FOUND, SHOULD BE INSERTED IN NODE: {node}")
-                return node, None
+                return node, None, self.__searchCount
             else:
                 return self.__recursive_search(child_node, key_to_search)
 
@@ -82,7 +89,7 @@ class BalancedTree:
         """
 
         # find the node to insert the new key
-        target_node, found_key = self.search(insert_key)
+        target_node, found_key, _ = self.search(insert_key)
         if found_key is not None:
             # key was found in tree
             raise ValueError(f"{found_key} is already in the tree.")
@@ -166,7 +173,7 @@ class BalancedTree:
         """
 
         # find the node to delete the key
-        target_node, found_key = self.search(key)
+        target_node, found_key, _ = self.search(key)
         if found_key is not None:
 
             # check if target_node is leaf node
