@@ -1,5 +1,6 @@
 import base64
 import ctypes
+import os
 import sys
 
 from PyQt6.QtGui import QIcon, QPixmap
@@ -32,6 +33,9 @@ def main():
 
     # Create the MainWindow instance
     config.mainWindow = MainWindow()
+
+    # change console window size
+    os.system('mode con: cols=170 lines=40')
 
     # Execute the Application
     logger.info("Starting the application!")
