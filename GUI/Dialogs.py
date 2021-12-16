@@ -87,7 +87,7 @@ class ConfirmationDialog(QDialog):
             case DialogType.INSERT | DialogType.DELETE:
                 # Create a layout containing a multi-number input
                 numInput = QLineEdit()
-                regex = QtCore.QRegularExpression("^(\d+(,\d+)*)?$")
+                regex = QtCore.QRegularExpression(r"^(\d+(,\d+)*)?$")
                 validator = QRegularExpressionValidator(regex)
                 numInput.setValidator(validator)
                 numInput.textChanged.connect(self.__updateButtonEnabled)
@@ -96,7 +96,7 @@ class ConfirmationDialog(QDialog):
             case DialogType.FIND:
                 # Create a layout containing a singular number input
                 numInput = QLineEdit()
-                regex = QtCore.QRegularExpression("^\d+$")
+                regex = QtCore.QRegularExpression(r"^\d+$")
                 validator = QRegularExpressionValidator(regex)
                 numInput.setValidator(validator)
                 numInput.textChanged.connect(self.__updateButtonEnabled)

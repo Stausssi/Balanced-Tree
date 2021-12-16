@@ -318,7 +318,6 @@ class MainWindow(QWidget):
 
         if dialog.exec():
             callback(*dialog.getReturnValues())
-            print(*dialog.getReturnValues())
         elif onFail is not None:
             onFail()
 
