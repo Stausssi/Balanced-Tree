@@ -1,7 +1,8 @@
+import base64
 import ctypes
 import sys
 
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QApplication
 from loguru import logger
 
@@ -23,7 +24,9 @@ def main():
     application.setStyle("Fusion")
 
     # Icon from: https://icons8.com/icon/47388/hierarchy"
-    application.setWindowIcon(QIcon("GUI/icon.png"))
+    icon = QPixmap()
+    icon.loadFromData(base64.b64decode(config.icon))
+    application.setWindowIcon(QIcon(icon))
     # This statement is needed for the icon to show in the taskbar
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("stuttgart.DHBW.DatenbankenII.BBaum.1.0")
 
