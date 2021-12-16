@@ -39,6 +39,7 @@ class MainWindow(QWidget):
         self.__searchPath: list[GraphicalNode] = []
         self.__nodeFound = False
         self.__searchTimer: Optional[QTimer] = None
+        self.__visualizeSearch = False
 
         # Configure the window
         self.setWindowTitle("Balancierter Baum")
@@ -186,7 +187,7 @@ class MainWindow(QWidget):
 
         orderInput = QSpinBox()
         orderInput.setRange(1, QIntValidator_MAX)
-        orderInput.valueChanged.connect(self.__updateOrder)
+        orderInput.editingFinished.connect(lambda: self.__updateOrder(orderInput.value()))
         orderInput.setValue(DEFAULT_ORDER)
 
         orderLayout = createVerticalLayout([orderLabel, orderInput])
@@ -446,7 +447,7 @@ class MainWindow(QWidget):
         This method is used to insert a value into the tree. It is used as a dialog-callback.
 
         Args:
-            value (int): The new value
+            value (str): The new value(s)
 
         Returns:
             None: Nothing
@@ -456,14 +457,11 @@ class MainWindow(QWidget):
         """
 
         logger.success(f"GUI: INSERT {value}")
-        values_array = value.split(",")
-        try:
-            for number in values_array:
-                self._tree.insert(int(number))
 
-                self.__updateTreeLayout()
-        except ValueError as e:
-            displayUserMessage("inserting value into the tree", e)
+        self.__runWorker([
+            ("i", int(value))
+            for value in value.split(",")
+        ])
 
     def __search(self, value) -> None:
         """
@@ -478,6 +476,7 @@ class MainWindow(QWidget):
 
         logger.success(f"GUI: SEARCH {value}")
 
+        self.__visualizeSearch = True
         self.__searchPath = []
         node, key = self._tree.search(int(value))
         self.__searchNode = self.__graphicalNodes.get(node)
@@ -487,6 +486,7 @@ class MainWindow(QWidget):
             self.__searchPath = []
             self.__searchNode = None
             self.__nodeFound = False
+            self.__visualizeSearch = False
 
             self.update()
 
@@ -501,22 +501,18 @@ class MainWindow(QWidget):
         This method is used to remove a value from the tree. It is used as a dialog-callback.
 
         Args:
-            value (int): The value which will be deleted.
+            value (str): The value(s) which will be deleted.
 
         Returns:
             None: Nothing
         """
 
         logger.success(f"GUI DELETE: {value}")
-        values_array = value.split(",")
 
-        try:
-            for number in values_array:
-                self._tree.delete(int(number))
-
-                self.__updateTreeLayout()
-        except ValueError as e:
-            displayUserMessage("deleting value from the tree", e)
+        self.__runWorker([
+            ("d", int(value))
+            for value in value.split(",")
+        ])
 
     def __showCSVContents(self, path) -> None:
         """
@@ -669,4 +665,5 @@ class MainWindow(QWidget):
             None: Nothing
         """
 
-        self.__searchPath.append(self.__graphicalNodes.get(treeNode))
+        if self.__visualizeSearch:
+            self.__searchPath.append(self.__graphicalNodes.get(treeNode))

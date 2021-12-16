@@ -1,10 +1,10 @@
 from enum import Enum, auto
 from typing import Union
 
-from PyQt6.QtCore import Qt
 import PyQt6.QtCore as QtCore
-from PyQt6.QtGui import QRegularExpressionValidator
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
+from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QDialogButtonBox, QWidget, QLayout, QLineEdit, QPushButton, \
     QFormLayout, QFileDialog, QScrollArea
 
