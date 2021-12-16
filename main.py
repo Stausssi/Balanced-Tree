@@ -35,7 +35,7 @@ def main():
     config.mainWindow = MainWindow()
 
     # change console window size
-    os.system('mode con: cols=170 lines=40')
+    os.system('mode con: cols=190 lines=40')
 
     # Execute the Application
     logger.info("Starting the application!")
